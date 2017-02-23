@@ -11,7 +11,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -68,7 +70,7 @@ public class StockTrends extends Application {
         
         currentStage = primaryStage;
         scene1 = new Scene(grid1, 300, 250);
-        scene2 = new Scene(grid2, 500, 500);
+        scene2 = new Scene(grid2, 1000, 1000);
         
         
         btn.setText("Analyze Stock History");
@@ -78,13 +80,9 @@ public class StockTrends extends Application {
                 companySelected = textField.getText();
                 currentStage.setScene(scene2);
                 try {
-                    //createGraph()
-                    Stock[] temp = averageStockByYear(getStockData(companySelected));
-                    
-                    for(Stock s: temp){
-                        System.out.println("Year: " + s.getYear() + " Open: " + s.getOpen());
-                    }
-                    
+                    Stock[] companyStockData = getStockData(companySelected);
+                    Stock[] yearlyStockData = averageStockByYear(companyStockData);
+                    createGraph(yearlyStockData);
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -116,7 +114,6 @@ public class StockTrends extends Application {
         String [] nextLine = reader.readNext(); //Discard column headers 
         while ((nextLine = reader.readNext()) != null) {
             // nextLine[] is an array of values from the line
-
             Stock stock = new Stock((nextLine[0]),
                     new BigDecimal(nextLine[1]), new BigDecimal(nextLine[2]),
                     new BigDecimal(nextLine[3]), new BigDecimal(nextLine[4]),
@@ -131,9 +128,11 @@ public class StockTrends extends Application {
     }
     
     public void createGraph(Stock[] stockData){
-        
-        final NumberAxis xAxis = new NumberAxis();
+        final NumberAxis xAxis = new NumberAxis(stockData[stockData.length - 1].getYear(), stockData[0].getYear(), 1);
+        System.out.println(xAxis.getTickLabelFormatter());
+        final DecimalFormat format = new DecimalFormat("####");
         final NumberAxis yAxis = new NumberAxis();
+
         xAxis.setLabel("Number of Years");
         //creating the chart
         final LineChart<Number,Number> lineChart = 
@@ -146,56 +145,49 @@ public class StockTrends extends Application {
     
         for(Stock s:stockData){
             series.getData().add(new XYChart.Data(s.getYear(), s.getOpen()));
-            //System.out.println(s.getDate() + s.getOpen());
-
         }
         
         //populating the series with data
-        Scene scene  = new Scene(lineChart,500,500);
+        Scene scene  = new Scene(lineChart,1000,1000);
         lineChart.getData().add(series);
         
         currentStage.setScene(scene);
     }
     
     private Stock[] averageStockByYear(Stock[] stockData){
-        
         List<Stock> stockDataByYear = new ArrayList<>();
-        
-        int count = 0;
-        
-        BigDecimal average = new BigDecimal(0);
-
-
-        
+        int count = 0; //Incremented for every entry that has the same year as the previous
+        BigDecimal average = new BigDecimal(0); //Variable used to compute the average from value/count
+        BigDecimal value = new BigDecimal(0); //Variable used to add the value of the daily stocks in order to compute the yearly average
         for(int i = 0; i<stockData.length; i++){
-            
             int currentYear = stockData[i].getYear();
-            System.out.println("The value of i: " + i);
-            System.out.println("currentYear: " + currentYear);
-            BigDecimal value = new BigDecimal(0);
-            
             for(int j = i; j<stockData.length; j++){
+                //If the entry is the same year, add to value and increment count
                 if(stockData[j].getYear() == currentYear){
-                    value.add(stockData[j].getOpen());
+                    value = value.add(stockData[j].getOpen());
                     count++;
                 }
+                //If it is a new year, compute the yearly stock average
                 if(stockData[j].getYear() != currentYear) {
-                    System.out.println("Value is: " + value);
-                    BigDecimal avgValue = value.divide(new BigDecimal(count));
-                    Stock yearStock = new Stock(currentYear, avgValue);
+                    average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
+                    Stock yearStock = new Stock(currentYear, average);
                     stockDataByYear.add(yearStock);
-                    System.out.println("There was a difference and the new year is: " + stockData[j].getYear());
+                    value = new BigDecimal(0);
+                    count = 0;
                     break;
                 }
                 i=j;
+                //For the last section of years
+                if(i == stockData.length - 1){
+                    average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
+                    Stock yearStock = new Stock(currentYear, average);
+                    stockDataByYear.add(yearStock);
+                    count = 0;
+                    break;
+                }
             }
-        
-            
-
         }
-        
         return stockDataByYear.toArray(new Stock[stockDataByYear.size()]);
-    
     }
     
     /**
