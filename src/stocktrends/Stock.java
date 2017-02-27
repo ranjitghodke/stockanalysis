@@ -16,7 +16,7 @@ import java.util.GregorianCalendar;
  */
 public class Stock {
     
-    private int date;
+    private Date date;
     
     private int year;
     private int month;
@@ -53,7 +53,7 @@ public class Stock {
             x.append(s);
         }
         
-        this.date = Integer.parseInt(x.toString());
+        this.date = new Date(year, month, day);
         
     }
     
@@ -74,7 +74,7 @@ public class Stock {
         return day;
     }
     
-    public int getDate(){
+    public Date getDate(){
         return date;
     }
     
