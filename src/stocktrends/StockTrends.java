@@ -34,6 +34,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
@@ -47,35 +48,48 @@ import javafx.util.StringConverter;
  */
 public class StockTrends extends Application {
 
+    //Private variables that are used throughout the program
     private Stage currentStage;
     private Scene scene1, scene2;
     private GridPane grid1, grid2;
     private String companySelected;
 
+    private Stock[] companyStockData;
+    
+    //The selected time frame to display analysis for
+    private static enum TIMEFRAME{
+        Daily, Monthly, Yearly
+    }
+    
+    /**
+     * The method called to start the program
+     * @param primaryStage 
+     */
     @Override
     public void start(Stage primaryStage) {
 
+        //Different view children for inputting company data
         TextField textField = new TextField();
         Button btn = new Button();
-        Button btn2 = new Button();
 
-        
+        //The first Grid to retrieve user input
         grid1 = new GridPane();
         grid1.setAlignment(Pos.CENTER);
         grid1.setHgap(10);
         grid1.setVgap(10);
         grid1.setPadding(new Insets(25, 25, 25, 25));
 
+        //The second Grid to display stock analysis
         grid2 = new GridPane();
-        grid2.setAlignment(Pos.CENTER);
         grid2.setHgap(10);
         grid2.setVgap(10);
         grid2.setPadding(new Insets(25, 25, 25, 25));
 
+        //Store the stage and the scenes
         currentStage = primaryStage;
         scene1 = new Scene(grid1, 300, 250);
         scene2 = new Scene(grid2, 1000, 1000);
-
+        
         btn.setText("Analyze Stock History");
         btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -83,10 +97,8 @@ public class StockTrends extends Application {
                 companySelected = textField.getText();
                 currentStage.setScene(scene2);
                 try {
-                    Stock[] companyStockData = getStockData(companySelected);
-                    Stock[] yearlyStockData = averageStockByYear(companyStockData);
-                    //createYearGraph(yearlyStockData);
-                    createDailyGraph(companyStockData);
+                    companyStockData = getStockData(companySelected);
+                    createDailyGraph(companyStockData); //Daily graph by default
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -96,15 +108,58 @@ public class StockTrends extends Application {
             }
         });
 
+        //Add the node children to the gridpane
         grid1.add(textField, 0, 0);
         grid1.add(btn, 0, 1);
 
-        grid2.add(btn2, 0, 0);
+        //The different options you can select
+        ObservableList<TIMEFRAME> options = FXCollections.observableArrayList();
+        options.add(TIMEFRAME.Daily);
+        options.add(TIMEFRAME.Monthly);
+        options.add(TIMEFRAME.Yearly);
+        
+        //Use combobox to select the different timeframe options
+        final ComboBox cb1 = new ComboBox(options);
+        cb1.getSelectionModel().selectFirst(); //Select "Daily" as the default option
+        cb1.setOnAction(new EventHandler<ActionEvent>(){
+            @Override
+            public void handle(ActionEvent event){            
+                String selectedOption = cb1.getSelectionModel().getSelectedItem().toString();
+
+                //Switch statement to change the graph appropriately
+                switch(TIMEFRAME.valueOf(selectedOption)){
+                    case Daily:
+                        createDailyGraph(companyStockData);
+                        break;
+                    case Monthly:
+                        break;
+                    case Yearly:
+                        Stock[] yearlyStockData = averageStockByYear(companyStockData);
+                        createYearGraph(yearlyStockData);
+                        break;
+                }
+                
+            }
+        });
+
+        
+        //populating the series with data
+        grid2.add(cb1, 0, 0);
+    
         currentStage.setTitle("Stock Market Analysis");
         currentStage.setScene(scene1);
         currentStage.show();
     }
 
+    /**
+     * Method: getStockData
+     * Description: Retrieves the csv from yahoo and parses the data into Stock
+     * objects
+     * @param companyName
+     * @return
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
     private Stock[] getStockData(String companyName) throws FileNotFoundException, IOException {
 
         List<Stock> stockData = new ArrayList<>();
@@ -130,8 +185,12 @@ public class StockTrends extends Application {
         return answer;
     }
 
+    /**
+     * Method: createDailyGraph
+     * Description: Creates a graph with daily stock data
+     * @param stockData 
+     */
     public void createDailyGraph(Stock[] stockData) {
-
         ObservableList<XYChart.Series<Date, Number>> series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
@@ -145,12 +204,30 @@ public class StockTrends extends Application {
         DateAxis dateAxis = new DateAxis();
         LineChart<Date, Number> lineChart = new LineChart<>(dateAxis, numberAxis, series);
 
-        //populating the series with data
-        Scene scene = new Scene(lineChart, 1000, 1000);
+        lineChart.setMinSize(900, 900);
+        
+        
+        //TODO: Redo this logic 
+        try{
+            grid2.getChildren().remove(1); //Remove the previous graph
+        }catch(IndexOutOfBoundsException e){
+            e.printStackTrace();
+        }
+        
+        //Add the chart as the second node child since the first child is the button
+        grid2.add(lineChart, 0, 1);
+        
+        Scene scene = new Scene(grid2, 1000, 1000);
         currentStage.setScene(scene);
     }
 
-    public void createYearGraph(Stock[] stockData) {
+    /**
+     * Method: createYearGraph
+     * Description: Gets the stock data and analyses the data averaging by year
+     * @param stockData 
+     */
+    public void createYearGraph(Stock[] stockData) {      
+       
         final NumberAxis xAxis = new NumberAxis(stockData[stockData.length - 1].getYear(), stockData[0].getYear(), 1);
         final DecimalFormat format = new DecimalFormat("####"); //Remove commas in thousand place ex) 1,000 -> 1000
         xAxis.setTickLabelFormatter(new StringConverter<Number>() {
@@ -176,22 +253,40 @@ public class StockTrends extends Application {
         final LineChart<Number, Number> lineChart
                 = new LineChart<Number, Number>(xAxis, yAxis);
 
-        lineChart.setTitle("Stock Monitoring");
+        lineChart.setTitle("Yearly Stock");
         //defining a series
         XYChart.Series series = new XYChart.Series();
-        series.setName("Portfolio");
+        series.setName("Average Stock Value - Year");
 
+        //Add the data
         for (Stock s : stockData) {
             series.getData().add(new XYChart.Data(s.getYear(), s.getOpen()));
         }
 
-        //populating the series with data
-        Scene scene = new Scene(lineChart, 1000, 1000);
+        
+        lineChart.setMinSize(900, 900);
         lineChart.getData().add(series);
-
+        
+        
+        //TODO: Redo this logic
+        try{
+            grid2.getChildren().remove(1); //Remove the previous graph
+        }catch(IndexOutOfBoundsException e){
+            e.printStackTrace();
+        }
+        
+        grid2.add(lineChart, 0, 1);
+        
+        Scene scene = new Scene(grid2, 1000, 1000);
         currentStage.setScene(scene);
     }
 
+    /**
+     * Method: averageStockByYear
+     * Description: Create a list of stocks that represent the average for the year
+     * @param stockData
+     * @return 
+     */
     private Stock[] averageStockByYear(Stock[] stockData) {
         List<Stock> stockDataByYear = new ArrayList<>();
         int count = 0; //Incremented for every entry that has the same year as the previous
