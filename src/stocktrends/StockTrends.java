@@ -29,6 +29,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -39,7 +40,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
 import javafx.scene.layout.StackPane;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.StringConverter;
 
 /**
@@ -55,15 +58,16 @@ public class StockTrends extends Application {
     private String companySelected;
 
     private Stock[] companyStockData;
-    
+
     //The selected time frame to display analysis for
-    private static enum TIMEFRAME{
+    private static enum TIMEFRAME {
         Daily, Monthly, Yearly
     }
-    
+
     /**
      * The method called to start the program
-     * @param primaryStage 
+     *
+     * @param primaryStage
      */
     @Override
     public void start(Stage primaryStage) {
@@ -89,7 +93,7 @@ public class StockTrends extends Application {
         currentStage = primaryStage;
         scene1 = new Scene(grid1, 300, 250);
         scene2 = new Scene(grid2, 1000, 1000);
-        
+
         btn.setText("Analyze Stock History");
         btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -117,17 +121,17 @@ public class StockTrends extends Application {
         options.add(TIMEFRAME.Daily);
         options.add(TIMEFRAME.Monthly);
         options.add(TIMEFRAME.Yearly);
-        
+
         //Use combobox to select the different timeframe options
         final ComboBox cb1 = new ComboBox(options);
         cb1.getSelectionModel().selectFirst(); //Select "Daily" as the default option
-        cb1.setOnAction(new EventHandler<ActionEvent>(){
+        cb1.setOnAction(new EventHandler<ActionEvent>() {
             @Override
-            public void handle(ActionEvent event){            
+            public void handle(ActionEvent event) {
                 String selectedOption = cb1.getSelectionModel().getSelectedItem().toString();
 
                 //Switch statement to change the graph appropriately
-                switch(TIMEFRAME.valueOf(selectedOption)){
+                switch (TIMEFRAME.valueOf(selectedOption)) {
                     case Daily:
                         createDailyGraph(companyStockData);
                         break;
@@ -138,27 +142,58 @@ public class StockTrends extends Application {
                         createYearGraph(yearlyStockData);
                         break;
                 }
-                
+
             }
         });
 
-        
+        Button btnOpenNewWindow = new Button();
+        btnOpenNewWindow.setText("See raw CSV Data");
+        btnOpenNewWindow.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                System.out.println("Date,Open,High,Low,Close,Volume,Adj Close");
+
+                for (Stock s : companyStockData) {
+                    System.out.print(s.getDate());
+                    System.out.print(',');
+                    System.out.print(s.getOpen());
+                    System.out.print(',');
+                    System.out.print(s.getHigh());
+                    System.out.print(',');
+                    System.out.print(s.getLow());
+                    System.out.print(',');
+                    System.out.print(s.getClose());
+                    System.out.print(',');
+                    System.out.print(s.getVolume());
+                    System.out.print(',');
+                    System.out.print(s.getAdjClose());
+                    System.out.println();
+                }
+
+                //Stage stage = new Stage();
+                //stage.setTitle("My New Stage Title");
+                //stage.setScene(new Scene(root, 450, 450));
+                //stage.show();
+                // Hide this current window (if this is what you want)
+            }
+        });
+
         //populating the series with data
         grid2.add(cb1, 0, 0);
-    
+        grid2.add(btnOpenNewWindow, 0, 1);
+
         currentStage.setTitle("Stock Market Analysis");
         currentStage.setScene(scene1);
         currentStage.show();
     }
 
     /**
-     * Method: getStockData
-     * Description: Retrieves the csv from yahoo and parses the data into Stock
-     * objects
+     * Method: getStockData Description: Retrieves the csv from yahoo and parses
+     * the data into Stock objects
+     *
      * @param companyName
      * @return
      * @throws FileNotFoundException
-     * @throws IOException 
+     * @throws IOException
      */
     private Stock[] getStockData(String companyName) throws FileNotFoundException, IOException {
 
@@ -186,16 +221,17 @@ public class StockTrends extends Application {
     }
 
     /**
-     * Method: createDailyGraph
-     * Description: Creates a graph with daily stock data
-     * @param stockData 
+     * Method: createDailyGraph Description: Creates a graph with daily stock
+     * data
+     *
+     * @param stockData
      */
     public void createDailyGraph(Stock[] stockData) {
         ObservableList<XYChart.Series<Date, Number>> series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
-        for(Stock s: stockData){
-                series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getOpen()));
+        for (Stock s : stockData) {
+            series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getOpen()));
         }
 
         series.add(new XYChart.Series<>("Daily Stock", series1Data));
@@ -205,29 +241,30 @@ public class StockTrends extends Application {
         LineChart<Date, Number> lineChart = new LineChart<>(dateAxis, numberAxis, series);
 
         lineChart.setMinSize(900, 900);
-        
-        
+
         //TODO: Redo this logic 
-        try{
-            grid2.getChildren().remove(1); //Remove the previous graph
-        }catch(IndexOutOfBoundsException e){
+        try {
+            grid2.getChildren().remove(2); //Remove the previous graph
+        } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
         }
-        
-        //Add the chart as the second node child since the first child is the button
-        grid2.add(lineChart, 0, 1);
-        
+
+        //Add the chart as the third node child since the first,second child is the button
+        grid2.add(lineChart, 0, 2);
+
         Scene scene = new Scene(grid2, 1000, 1000);
         currentStage.setScene(scene);
+        currentStage.centerOnScreen();
     }
 
     /**
-     * Method: createYearGraph
-     * Description: Gets the stock data and analyses the data averaging by year
-     * @param stockData 
+     * Method: createYearGraph Description: Gets the stock data and analyses the
+     * data averaging by year
+     *
+     * @param stockData
      */
-    public void createYearGraph(Stock[] stockData) {      
-       
+    public void createYearGraph(Stock[] stockData) {
+
         final NumberAxis xAxis = new NumberAxis(stockData[stockData.length - 1].getYear(), stockData[0].getYear(), 1);
         final DecimalFormat format = new DecimalFormat("####"); //Remove commas in thousand place ex) 1,000 -> 1000
         xAxis.setTickLabelFormatter(new StringConverter<Number>() {
@@ -263,29 +300,30 @@ public class StockTrends extends Application {
             series.getData().add(new XYChart.Data(s.getYear(), s.getOpen()));
         }
 
-        
         lineChart.setMinSize(900, 900);
         lineChart.getData().add(series);
-        
-        
+
         //TODO: Redo this logic
-        try{
-            grid2.getChildren().remove(1); //Remove the previous graph
-        }catch(IndexOutOfBoundsException e){
+        try {
+            grid2.getChildren().remove(2); //Remove the previous graph
+        } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
         }
-        
-        grid2.add(lineChart, 0, 1);
-        
+
+        //Add the chart as the third node child since the first,second child is the button
+        grid2.add(lineChart, 0, 2);
+
         Scene scene = new Scene(grid2, 1000, 1000);
         currentStage.setScene(scene);
+        currentStage.centerOnScreen();
     }
 
     /**
-     * Method: averageStockByYear
-     * Description: Create a list of stocks that represent the average for the year
+     * Method: averageStockByYear Description: Create a list of stocks that
+     * represent the average for the year
+     *
      * @param stockData
-     * @return 
+     * @return
      */
     private Stock[] averageStockByYear(Stock[] stockData) {
         List<Stock> stockDataByYear = new ArrayList<>();

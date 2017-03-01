@@ -8,7 +8,7 @@
   </information>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="StockTrends.jar" size="21357" download="eager" />
+    <jar href="StockTrends.jar" size="21317" download="eager" />
     <jar href="lib\opencsv-3.9.jar" size="80720" download="eager" />
   </resources>
   <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="StockTrends" >
