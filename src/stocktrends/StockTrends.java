@@ -29,6 +29,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
@@ -56,8 +57,8 @@ public class StockTrends extends Application {
     private Scene scene1, scene2;
     private GridPane grid1, grid2;
     private String companySelected;
-
     private Stock[] companyStockData;
+    private boolean graphDisplayed;
 
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
@@ -150,6 +151,17 @@ public class StockTrends extends Application {
         btnOpenNewWindow.setText("See raw CSV Data");
         btnOpenNewWindow.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
+                
+//                Parent root;
+//                root = grid2;
+//                Stage stage = new Stage();
+//                stage.setTitle("My New Stage Title");
+//                stage.setScene(new Scene(root, 450, 450));
+//                stage.show();
+//                // Hide this current window (if this is what you want)
+//                ((Node)(event.getSource())).getScene().getWindow().hide();
+                
+                
                 System.out.println("Date,Open,High,Low,Close,Volume,Adj Close");
 
                 for (Stock s : companyStockData) {
@@ -221,7 +233,8 @@ public class StockTrends extends Application {
     }
 
     /**
-     * Method: createDailyGraph Description: Creates a graph with daily stock
+     * Method: createDailyGraph
+     * Description: Creates a graph with daily stock
      * data
      *
      * @param stockData
@@ -239,22 +252,19 @@ public class StockTrends extends Application {
         NumberAxis numberAxis = new NumberAxis();
         DateAxis dateAxis = new DateAxis();
         LineChart<Date, Number> lineChart = new LineChart<>(dateAxis, numberAxis, series);
-
         lineChart.setMinSize(900, 900);
 
         //TODO: Redo this logic 
-        try {
+        if(graphDisplayed){
             grid2.getChildren().remove(2); //Remove the previous graph
-        } catch (IndexOutOfBoundsException e) {
-            e.printStackTrace();
-        }
+        } 
 
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
 
-        Scene scene = new Scene(grid2, 1000, 1000);
-        currentStage.setScene(scene);
+        graphDisplayed = true;
         currentStage.centerOnScreen();
+        
     }
 
     /**
@@ -304,17 +314,12 @@ public class StockTrends extends Application {
         lineChart.getData().add(series);
 
         //TODO: Redo this logic
-        try {
-            grid2.getChildren().remove(2); //Remove the previous graph
-        } catch (IndexOutOfBoundsException e) {
-            e.printStackTrace();
-        }
-
+        if(graphDisplayed) grid2.getChildren().remove(2); //Remove the previous graph
+        
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
 
-        Scene scene = new Scene(grid2, 1000, 1000);
-        currentStage.setScene(scene);
+        graphDisplayed = true;
         currentStage.centerOnScreen();
     }
 
