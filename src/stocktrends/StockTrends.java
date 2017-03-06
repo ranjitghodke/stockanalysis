@@ -6,9 +6,14 @@
 package stocktrends;
 
 import com.opencsv.CSVReader;
+import java.awt.Desktop;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
@@ -52,6 +57,7 @@ public class StockTrends extends Application {
     private String companySelected;
     private Stock[] companyStockData;
     private boolean graphDisplayed;
+    private File csvFile;
 
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
@@ -144,39 +150,11 @@ public class StockTrends extends Application {
         btnOpenNewWindow.setText("See raw CSV Data");
         btnOpenNewWindow.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-
-//                Parent root;
-//                root = grid2;
-//                Stage stage = new Stage();
-//                stage.setTitle("My New Stage Title");
-//                stage.setScene(new Scene(root, 450, 450));
-//                stage.show();
-//                // Hide this current window (if this is what you want)
-//                ((Node)(event.getSource())).getScene().getWindow().hide();
-                System.out.println("Date,Open,High,Low,Close,Volume,Adj Close");
-
-                for (Stock s : companyStockData) {
-                    System.out.print(s.getDate());
-                    System.out.print(',');
-                    System.out.print(s.getOpen());
-                    System.out.print(',');
-                    System.out.print(s.getHigh());
-                    System.out.print(',');
-                    System.out.print(s.getLow());
-                    System.out.print(',');
-                    System.out.print(s.getClose());
-                    System.out.print(',');
-                    System.out.print(s.getVolume());
-                    System.out.print(',');
-                    System.out.print(s.getAdjClose());
-                    System.out.println();
+                try {
+                    Desktop.getDesktop().open(csvFile);
+                } catch (IOException ex) {
+                    Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
-                //Stage stage = new Stage();
-                //stage.setTitle("My New Stage Title");
-                //stage.setScene(new Scene(root, 450, 450));
-                //stage.show();
-                // Hide this current window (if this is what you want)
             }
         });
 
@@ -206,7 +184,12 @@ public class StockTrends extends Application {
         String completedYahooUrl = yahooUrl + companyName;
         URL csvUrl = new URL(completedYahooUrl);
 
-        CSVReader reader = new CSVReader(new InputStreamReader(csvUrl.openStream()));
+        InputStream csvInputStream = csvUrl.openStream();
+        InputStreamReader initalStream = new InputStreamReader(csvInputStream);
+
+        saveCSVFile(csvInputStream);
+
+        CSVReader reader = new CSVReader(initalStream);
 
         String[] nextLine = reader.readNext(); //Discard column headers 
         while ((nextLine = reader.readNext()) != null) {
@@ -221,6 +204,14 @@ public class StockTrends extends Application {
         Stock[] answer = stockData.toArray(new Stock[stockData.size()]);
 
         return answer;
+    }
+
+    private void saveCSVFile(InputStream csvInputStream) throws IOException, FileNotFoundException {
+        byte[] buffer = new byte[csvInputStream.available()];
+        csvInputStream.read(buffer);
+        csvFile = new File("csvFile.csv");
+        OutputStream outStream = new FileOutputStream(csvFile);
+        outStream.write(buffer);
     }
 
     /**
