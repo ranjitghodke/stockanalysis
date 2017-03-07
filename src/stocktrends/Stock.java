@@ -55,8 +55,8 @@ public class Stock {
         
     }
     
-    public Stock(int year, BigDecimal open){
-        this.open = open;
+    public Stock(int year, BigDecimal close){
+        this.close = close;
         this.year = year;
     }
     

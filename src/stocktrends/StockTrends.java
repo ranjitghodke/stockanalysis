@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package stocktrends;
 
 import com.opencsv.CSVReader;
@@ -58,6 +53,7 @@ public class StockTrends extends Application {
     private Stock[] companyStockData;
     private boolean graphDisplayed;
     private File csvFile;
+    private BigDecimal movingAverage50, movingAverage100, movingAverage200;
 
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
@@ -103,6 +99,7 @@ public class StockTrends extends Application {
                 try {
                     companyStockData = getStockData(companySelected);
                     createDailyGraph(companyStockData); //Daily graph by default
+                    calculateMovingAverages(companyStockData); //Calculate the moving averages
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -225,7 +222,7 @@ public class StockTrends extends Application {
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
         for (Stock s : stockData) {
-            series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getOpen()));
+            series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
         }
 
         series.add(new XYChart.Series<>("Daily Stock", series1Data));
@@ -288,7 +285,7 @@ public class StockTrends extends Application {
 
         //Add the data
         for (Stock s : stockData) {
-            series.getData().add(new XYChart.Data(s.getYear(), s.getOpen()));
+            series.getData().add(new XYChart.Data(s.getYear(), s.getClose()));
         }
 
         lineChart.setMinSize(900, 900);
@@ -322,7 +319,7 @@ public class StockTrends extends Application {
             for (int j = i; j < stockData.length; j++) {
                 //If the entry is the same year, add to value and increment count
                 if (stockData[j].getYear() == currentYear) {
-                    value = value.add(stockData[j].getOpen());
+                    value = value.add(stockData[j].getClose());
                     count++;
                 }
                 //If it is a new year, compute the yearly stock average
@@ -346,6 +343,43 @@ public class StockTrends extends Application {
             }
         }
         return stockDataByYear.toArray(new Stock[stockDataByYear.size()]);
+    }
+
+    /**
+     * Method: calculatMovingAverage Description: This method is used to
+     * calculate the moving averages for the different sample sizes(50, 100, and
+     * 200).
+     *
+     * @param stockData
+     */
+    private void calculateMovingAverages(Stock[] stockData) {
+        //Condition that not even 50 days exist - Use what you have
+        if (stockData.length < 50) {
+            BigDecimal value = new BigDecimal(0);
+            for (Stock stock : stockData) {
+                value = value.add(stock.getClose());
+            }
+            movingAverage50 = value.divide(new BigDecimal(stockData.length), 2, RoundingMode.HALF_UP);
+        }
+        //If >50 days exist. If corner case like 99 entries exist; only assign 
+        //the 50 day moving average
+        else {
+            //Variable used to add the value of the daily stocks in order to compute the yearly average
+            BigDecimal value = new BigDecimal(0);
+            for (int i = 0; i < 200; i++) {
+                value = value.add(stockData[i].getClose());
+                if (i == 49) {
+                    movingAverage50 = value.divide(new BigDecimal(50), 2, RoundingMode.HALF_UP); //the moving average for the top 50 entries
+                }
+                if (i == 99) {
+                    movingAverage100 = value.divide(new BigDecimal(100), 2, RoundingMode.HALF_UP); //the moving average for the top 100 entries
+                }
+                if (i == 199) {
+                    movingAverage200 = value.divide(new BigDecimal(200), 2, RoundingMode.HALF_UP); //the moving average for the top 200 entries
+                }
+            }
+        }
+        System.out.println("50: " + movingAverage50 + "100: " + movingAverage100 + "200: " + movingAverage200);
     }
 
     /**
