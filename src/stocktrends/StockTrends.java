@@ -15,6 +15,7 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -99,7 +100,7 @@ public class StockTrends extends Application {
                 try {
                     companyStockData = getStockData(companySelected);
                     createDailyGraph(companyStockData); //Daily graph by default
-                    calculateMovingAverages(companyStockData); //Calculate the moving averages
+                    runSimpleAlgo(companyStockData); //Calculate the moving averages
                 } catch (FileNotFoundException ex) {
                     Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -379,7 +380,47 @@ public class StockTrends extends Application {
                 }
             }
         }
-        System.out.println("50: " + movingAverage50 + "100: " + movingAverage100 + "200: " + movingAverage200);
+        System.out.println(" 50: " + movingAverage50 + " 100: " + movingAverage100 + " 200: " + movingAverage200);
+    }
+    
+    /**
+     * Method: simpleAlgo
+     * Description: Simple stock buying and selling algorithm.
+     * 
+     * Buy 50 shares of a stock when its 50-day moving average goes above the 200-day moving average
+     * Sell shares of the stock when its 50-day moving average goes below the 200-day moving average
+     * 
+     * @param stockData 
+     */
+    private void simpleAlgo(){
+        switch (movingAverage50.compareTo(movingAverage200)) {
+            case 1:
+                System.out.println("You should buy");
+                break;
+            case 0:
+                System.out.println("You should do nothing");
+                break;
+            case -1:
+                System.out.println("You should sell");
+                break;
+            default:
+                System.out.println("Something has gone wrong; I recommend looking at the data yourself.");
+                break;
+        }
+    }
+    
+    /**
+     * Method: runSimpleAlgo
+     * Description: Method used to run the simpleAlgo method using 200 day periods
+     * and simulating from the beginning of the company
+     * @param stockData 
+     */
+    private void runSimpleAlgo(Stock[] stockData){
+        for(int i = stockData.length - 1; i>200; i-=50){
+            Stock[] tempPeriod = Arrays.copyOfRange(stockData,(i-200), i );
+            calculateMovingAverages(tempPeriod);
+            simpleAlgo();
+        }
     }
 
     /**
