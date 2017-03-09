@@ -55,7 +55,8 @@ public class StockTrends extends Application {
     private boolean graphDisplayed;
     private File csvFile;
     private BigDecimal movingAverage50, movingAverage100, movingAverage200;
-
+    private BigDecimal profit;
+    
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
         Daily, Monthly, Yearly
@@ -392,16 +393,18 @@ public class StockTrends extends Application {
      * 
      * @param stockData 
      */
-    private void simpleAlgo(){
+    private void simpleAlgo(Stock s){
         switch (movingAverage50.compareTo(movingAverage200)) {
             case 1:
-                System.out.println("You should buy");
+                profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
+                System.out.println("You should buy @ " + s.getClose());                
                 break;
             case 0:
                 System.out.println("You should do nothing");
                 break;
             case -1:
-                System.out.println("You should sell");
+                System.out.println("You should sell @ " + s.getClose());
+                profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
                 break;
             default:
                 System.out.println("Something has gone wrong; I recommend looking at the data yourself.");
@@ -416,11 +419,13 @@ public class StockTrends extends Application {
      * @param stockData 
      */
     private void runSimpleAlgo(Stock[] stockData){
+        profit = new BigDecimal(0);
         for(int i = stockData.length - 1; i>200; i-=50){
             Stock[] tempPeriod = Arrays.copyOfRange(stockData,(i-200), i );
             calculateMovingAverages(tempPeriod);
-            simpleAlgo();
+            simpleAlgo(tempPeriod[0]);
         }
+        System.out.println("Net Profit with simple algo is: " + profit);
     }
 
     /**
