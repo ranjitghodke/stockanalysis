@@ -60,6 +60,13 @@ public class Stock {
         this.year = year;
     }
     
+    public Stock(int year, int month, BigDecimal close){
+        this.close = close;
+        this.year = year;
+        this.month = month;
+        this.day = 1;
+    }
+    
     public int getYear(){
         return year;
     }

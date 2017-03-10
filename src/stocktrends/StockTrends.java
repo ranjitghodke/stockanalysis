@@ -56,7 +56,7 @@ public class StockTrends extends Application {
     private File csvFile;
     private BigDecimal movingAverage50, movingAverage100, movingAverage200;
     private BigDecimal profit;
-    
+
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
         Daily, Monthly, Yearly
@@ -135,6 +135,8 @@ public class StockTrends extends Application {
                         createDailyGraph(companyStockData);
                         break;
                     case Monthly:
+                        Stock[] monthlyStockData = averageStockByMonth(companyStockData);
+                        createMonthlyGraph(monthlyStockData);
                         break;
                     case Yearly:
                         Stock[] yearlyStockData = averageStockByYear(companyStockData);
@@ -248,6 +250,41 @@ public class StockTrends extends Application {
     }
 
     /**
+     * Method: createMonthlyGraph Description: Creates a graph with monthly
+     * stock data
+     *
+     * @param stockData
+     */
+    public void createMonthlyGraph(Stock[] stockData) {
+        ObservableList<XYChart.Series<Date, Number>> series = FXCollections.observableArrayList();
+
+        ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
+        for (Stock s : stockData) {
+            //TODO: Add logic to handle monthly stock data - meaning that s.getDay() on the monthly stock data shouldn't use 01 hardcoded.
+            //See Stock(int year, int month, BigDecimal close) for more info
+            series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
+        }
+
+        series.add(new XYChart.Series<>("Daily Stock", series1Data));
+
+        NumberAxis numberAxis = new NumberAxis();
+        DateAxis dateAxis = new DateAxis();
+        LineChart<Date, Number> lineChart = new LineChart<>(dateAxis, numberAxis, series);
+        lineChart.setMinSize(900, 900);
+
+        //TODO: Redo this logic 
+        if (graphDisplayed) {
+            grid2.getChildren().remove(2); //Remove the previous graph
+        }
+
+        //Add the chart as the third node child since the first,second child is the button
+        grid2.add(lineChart, 0, 2);
+
+        graphDisplayed = true;
+        currentStage.centerOnScreen();
+    }
+
+    /**
      * Method: createYearGraph Description: Gets the stock data and analyses the
      * data averaging by year
      *
@@ -302,6 +339,51 @@ public class StockTrends extends Application {
 
         graphDisplayed = true;
         currentStage.centerOnScreen();
+    }
+
+    /**
+     * Method: averageStockByMonth Description: Create a list of stocks that
+     * represent the average for the months throughout the years
+     *
+     * @param stockData
+     * @return
+     */
+    private Stock[] averageStockByMonth(Stock[] stockData) {
+        List<Stock> stockDataByMonth = new ArrayList<>();
+        int count = 0; //Incremented for every entry that has the same month as the previous
+        BigDecimal average = new BigDecimal(0); //Variable used to compute the average from value/count
+        BigDecimal value = new BigDecimal(0); //Variable used to add the value of the daily stocks in order to compute the monthly average
+        for (int i = 0; i < stockData.length; i++) {
+            int currentMonth = stockData[i].getMonth();
+            int currentYear = stockData[i].getYear();
+            for (int j = i; j < stockData.length; j++) {
+                //If the entry is the same month, add to value and increment count
+                if (stockData[j].getMonth() == currentMonth) {
+                    value = value.add(stockData[j].getClose());
+                    count++;
+                }
+                //If it is a new month, compute the previous monthly stock average
+                if (stockData[j].getMonth() != currentMonth) {
+                    average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
+                    Stock monthStock = new Stock(currentYear, currentMonth, average);
+                    stockDataByMonth.add(monthStock);
+                    value = new BigDecimal(0);
+                    count = 0;
+                    break;
+                }
+                i = j;
+                //For the last section of years
+                if (i == stockData.length - 1) {
+                    average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
+                    Stock monthStock = new Stock(currentYear, currentMonth, average);
+                    stockDataByMonth.add(monthStock);
+                    count = 0;
+                    break;
+                }
+            }
+        }
+
+        return stockDataByMonth.toArray(new Stock[stockDataByMonth.size()]);
     }
 
     /**
@@ -362,8 +444,7 @@ public class StockTrends extends Application {
                 value = value.add(stock.getClose());
             }
             movingAverage50 = value.divide(new BigDecimal(stockData.length), 2, RoundingMode.HALF_UP);
-        }
-        //If >50 days exist. If corner case like 99 entries exist; only assign 
+        } //If >50 days exist. If corner case like 99 entries exist; only assign 
         //the 50 day moving average
         else {
             //Variable used to add the value of the daily stocks in order to compute the yearly average
@@ -383,21 +464,22 @@ public class StockTrends extends Application {
         }
         System.out.println(" 50: " + movingAverage50 + " 100: " + movingAverage100 + " 200: " + movingAverage200);
     }
-    
+
     /**
-     * Method: simpleAlgo
-     * Description: Simple stock buying and selling algorithm.
-     * 
-     * Buy 50 shares of a stock when its 50-day moving average goes above the 200-day moving average
-     * Sell shares of the stock when its 50-day moving average goes below the 200-day moving average
-     * 
-     * @param stockData 
+     * Method: simpleAlgo Description: Simple stock buying and selling
+     * algorithm.
+     *
+     * Buy 50 shares of a stock when its 50-day moving average goes above the
+     * 200-day moving average Sell shares of the stock when its 50-day moving
+     * average goes below the 200-day moving average
+     *
+     * @param stockData
      */
-    private void simpleAlgo(Stock s){
+    private void simpleAlgo(Stock s) {
         switch (movingAverage50.compareTo(movingAverage200)) {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
-                System.out.println("You should buy @ " + s.getClose());                
+                System.out.println("You should buy @ " + s.getClose());
                 break;
             case 0:
                 System.out.println("You should do nothing");
@@ -411,17 +493,18 @@ public class StockTrends extends Application {
                 break;
         }
     }
-    
+
     /**
-     * Method: runSimpleAlgo
-     * Description: Method used to run the simpleAlgo method using 200 day periods
-     * and simulating from the beginning of the company
-     * @param stockData 
+     * Method: runSimpleAlgo Description: Method used to run the simpleAlgo
+     * method using 200 day periods and simulating from the beginning of the
+     * company
+     *
+     * @param stockData
      */
-    private void runSimpleAlgo(Stock[] stockData){
+    private void runSimpleAlgo(Stock[] stockData) {
         profit = new BigDecimal(0);
-        for(int i = stockData.length - 1; i>200; i-=50){
-            Stock[] tempPeriod = Arrays.copyOfRange(stockData,(i-200), i );
+        for (int i = stockData.length - 1; i > 200; i -= 50) {
+            Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
             calculateMovingAverages(tempPeriod);
             simpleAlgo(tempPeriod[0]);
         }
