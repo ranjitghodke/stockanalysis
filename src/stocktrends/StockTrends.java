@@ -56,6 +56,9 @@ public class StockTrends extends Application {
     private File csvFile;
     private BigDecimal movingAverage50, movingAverage100, movingAverage200;
     private BigDecimal profit;
+    private ObservableList<XYChart.Data<Date, Number>> profitPoints, neutralPoints, lossPoints;
+    private ObservableList<XYChart.Series<Date, Number>> series;
+    private LineChart<Number, Number> lineChart;
 
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
@@ -128,7 +131,6 @@ public class StockTrends extends Application {
             @Override
             public void handle(ActionEvent event) {
                 String selectedOption = cb1.getSelectionModel().getSelectedItem().toString();
-
                 //Switch statement to change the graph appropriately
                 switch (TIMEFRAME.valueOf(selectedOption)) {
                     case Daily:
@@ -143,7 +145,7 @@ public class StockTrends extends Application {
                         createYearGraph(yearlyStockData);
                         break;
                 }
-
+                runSimpleAlgo(companyStockData); //Calculate the moving averages
             }
         });
 
@@ -222,7 +224,7 @@ public class StockTrends extends Application {
      * @param stockData
      */
     public void createDailyGraph(Stock[] stockData) {
-        ObservableList<XYChart.Series<Date, Number>> series = FXCollections.observableArrayList();
+        series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
         for (Stock s : stockData) {
@@ -256,7 +258,7 @@ public class StockTrends extends Application {
      * @param stockData
      */
     public void createMonthlyGraph(Stock[] stockData) {
-        ObservableList<XYChart.Series<Date, Number>> series = FXCollections.observableArrayList();
+        series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
         for (Stock s : stockData) {
@@ -314,8 +316,7 @@ public class StockTrends extends Application {
 
         xAxis.setLabel("Number of Years");
         //creating the chart
-        final LineChart<Number, Number> lineChart
-                = new LineChart<Number, Number>(xAxis, yAxis);
+        lineChart = new LineChart<Number, Number>(xAxis, yAxis);
 
         lineChart.setTitle("Yearly Stock");
         //defining a series
@@ -480,13 +481,16 @@ public class StockTrends extends Application {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
                 System.out.println("You should buy @ " + s.getClose());
+                profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             case 0:
                 System.out.println("You should do nothing");
+                neutralPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             case -1:
                 System.out.println("You should sell @ " + s.getClose());
                 profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
+                lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             default:
                 System.out.println("Something has gone wrong; I recommend looking at the data yourself.");
@@ -502,12 +506,46 @@ public class StockTrends extends Application {
      * @param stockData
      */
     private void runSimpleAlgo(Stock[] stockData) {
+        profitPoints = FXCollections.observableArrayList();
+        neutralPoints = FXCollections.observableArrayList();
+        lossPoints = FXCollections.observableArrayList();
         profit = new BigDecimal(0);
+
         for (int i = stockData.length - 1; i > 200; i -= 50) {
             Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
             calculateMovingAverages(tempPeriod);
             simpleAlgo(tempPeriod[0]);
         }
+
+        /*
+        Add the three profit, neutral, and loss results to the graph 
+        */
+        XYChart.Series profitPointsSeries = new XYChart.Series<>("Profit Points", profitPoints);
+        XYChart.Series neutralPointsSeries = new XYChart.Series<>("Neutral Points", neutralPoints);
+        XYChart.Series lossPointsSeries = new XYChart.Series<>("Loss Points", lossPoints);
+
+        series.add(profitPointsSeries);
+        series.add(neutralPointsSeries);
+        series.add(lossPointsSeries);
+
+        //TODO: Implement profit, neutral, and loss for the yearly graph
+//        lineChart.getData().add(profitPointsSeries);
+//        lineChart.getData().add(profitPointsSeries);
+//        lineChart.getData().add(profitPointsSeries);
+//
+//        XYChart.Series profitPointsSeriesYearly = new XYChart.Series();
+//        XYChart.Series profitPointsSeriesMonthly = new XYChart.Series();
+//        XYChart.Series profitPointsSeriesDaily = new XYChart.Series();
+//
+//        profitPointsSeriesYearly.setName("Profit Points - Yearly");
+//
+//        //Add the data
+//        for (Stock s : stockData) {
+//            series.getData().add(new XYChart.Data(s.getYear(), s.getClose()));
+//        }
+//
+//        lineChart.setMinSize(900, 900);
+//        lineChart.getData().add(series);
         System.out.println("Net Profit with simple algo is: " + profit);
     }
 
