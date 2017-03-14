@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -34,10 +36,18 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableColumn.CellDataFeatures;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import javafx.util.StringConverter;
 
 /**
@@ -50,6 +60,8 @@ public class StockTrends extends Application {
     private Stage currentStage;
     private Scene scene1, scene2;
     private GridPane grid1, grid2;
+    private TableView table;
+
     private String companySelected;
     private Stock[] companyStockData;
     private boolean graphDisplayed;
@@ -93,7 +105,7 @@ public class StockTrends extends Application {
         //Store the stage and the scenes
         currentStage = primaryStage;
         scene1 = new Scene(grid1, 300, 250);
-        scene2 = new Scene(grid2, 1000, 1000);
+        scene2 = new Scene(grid2, 1250, 1000);
 
         btn.setText("Analyze Stock History");
         btn.setOnAction(new EventHandler<ActionEvent>() {
@@ -245,9 +257,10 @@ public class StockTrends extends Application {
 
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
-
+       
         graphDisplayed = true;
         currentStage.centerOnScreen();
+        
 
     }
 
@@ -342,6 +355,42 @@ public class StockTrends extends Application {
         currentStage.centerOnScreen();
     }
 
+    private class Row{
+        private SimpleStringProperty fieldValue;
+        
+        Row (String fValue){
+        this.fieldValue = new SimpleStringProperty(fValue);
+        }
+    }
+    
+    /**
+     * Method: drawTable()
+     * Description: Draws a table with the buy and sell data
+     */
+    private void drawTable(List<String> stringData){  
+        table = new TableView();
+        
+        ObservableList<Row> observableList = FXCollections.observableArrayList(); 
+        
+        stringData.forEach((s) -> {
+            observableList.add(new Row(s));
+        });     
+
+        TableColumn columnName = new TableColumn("Value");
+        columnName.setCellValueFactory(new PropertyValueFactory<Row,String>("fieldValue"));
+        
+        table.getColumns().add(columnName);
+        table.getItems().addAll(observableList);
+ 
+        final VBox vbox = new VBox();
+        vbox.setSpacing(5);
+        vbox.setPadding(new Insets(10, 0, 0, 10));
+        vbox.getChildren().addAll(table);
+ 
+        grid2.add(vbox, 1, 2);
+    }
+    
+    
     /**
      * Method: averageStockByMonth Description: Create a list of stocks that
      * represent the average for the months throughout the years
@@ -466,6 +515,7 @@ public class StockTrends extends Application {
         System.out.println(" 50: " + movingAverage50 + " 100: " + movingAverage100 + " 200: " + movingAverage200);
     }
 
+    private List<String> profitPointsList;
     /**
      * Method: simpleAlgo Description: Simple stock buying and selling
      * algorithm.
@@ -480,20 +530,20 @@ public class StockTrends extends Application {
         switch (movingAverage50.compareTo(movingAverage200)) {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
-                System.out.println("You should buy @ " + s.getClose());
+                profitPointsList.add("You should buy @ " + s.getClose());
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             case 0:
-                System.out.println("You should do nothing");
+                profitPointsList.add("You should do nothing");
                 neutralPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             case -1:
-                System.out.println("You should sell @ " + s.getClose());
+                profitPointsList.add("You should sell @ " + s.getClose());
                 profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
                 lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             default:
-                System.out.println("Something has gone wrong; I recommend looking at the data yourself.");
+                profitPointsList.add("Something has gone wrong; I recommend looking at the data yourself.");
                 break;
         }
     }
@@ -510,7 +560,8 @@ public class StockTrends extends Application {
         neutralPoints = FXCollections.observableArrayList();
         lossPoints = FXCollections.observableArrayList();
         profit = new BigDecimal(0);
-
+        profitPointsList = new ArrayList<>();
+        
         for (int i = stockData.length - 1; i > 200; i -= 50) {
             Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
             calculateMovingAverages(tempPeriod);
@@ -546,7 +597,8 @@ public class StockTrends extends Application {
 //
 //        lineChart.setMinSize(900, 900);
 //        lineChart.getData().add(series);
-        System.out.println("Net Profit with simple algo is: " + profit);
+        profitPointsList.add("Net Profit with simple algo is: " + profit);
+        drawTable(profitPointsList);
     }
 
     /**
