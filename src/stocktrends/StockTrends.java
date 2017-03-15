@@ -23,7 +23,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -36,18 +35,15 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableColumn.CellDataFeatures;
+import javafx.scene.control.TableColumn.CellEditEvent;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import javafx.util.StringConverter;
 
 /**
@@ -60,7 +56,7 @@ public class StockTrends extends Application {
     private Stage currentStage;
     private Scene scene1, scene2;
     private GridPane grid1, grid2;
-    private TableView table;
+    private TableView<AlgorithmResult> table;
 
     private String companySelected;
     private Stock[] companyStockData;
@@ -257,10 +253,9 @@ public class StockTrends extends Application {
 
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
-       
+
         graphDisplayed = true;
         currentStage.centerOnScreen();
-        
 
     }
 
@@ -355,42 +350,67 @@ public class StockTrends extends Application {
         currentStage.centerOnScreen();
     }
 
-    private class Row{
-        private SimpleStringProperty fieldValue;
-        
-        Row (String fValue){
-        this.fieldValue = new SimpleStringProperty(fValue);
+    /**
+     * Class: AlgorithmResult Description: This class is used as entries for the
+     * tableview
+     */
+    public static class AlgorithmResult {
+
+        private final SimpleStringProperty dataPointAnalysis;
+
+        private AlgorithmResult(String dataPointAnalysis) {
+            this.dataPointAnalysis = new SimpleStringProperty(dataPointAnalysis);
+        }
+
+        public String getDataPointAnalysis() {
+            return dataPointAnalysis.get();
+        }
+
+        public void setDataPointAnalysis(String dataPointAnalysis) {
+            this.dataPointAnalysis.set(dataPointAnalysis);
         }
     }
-    
-    /**
-     * Method: drawTable()
-     * Description: Draws a table with the buy and sell data
-     */
-    private void drawTable(List<String> stringData){  
-        table = new TableView();
-        
-        ObservableList<Row> observableList = FXCollections.observableArrayList(); 
-        
-        stringData.forEach((s) -> {
-            observableList.add(new Row(s));
-        });     
 
-        TableColumn columnName = new TableColumn("Value");
-        columnName.setCellValueFactory(new PropertyValueFactory<Row,String>("fieldValue"));
-        
-        table.getColumns().add(columnName);
-        table.getItems().addAll(observableList);
- 
+    /**
+     * Method: drawTable() Description: Draws a table with the buy and sell data
+     */
+    private void drawTable(List<String> stringData) {
+        table = new TableView<>();
+
+        ObservableList<AlgorithmResult> data
+                = FXCollections.observableArrayList();
+
+        //Add the data to the data list
+        stringData.forEach((s) -> {
+            data.add(new AlgorithmResult(s));
+        });
+
+        table.setEditable(true);
+
+        TableColumn<AlgorithmResult, String> dataPointCol
+                = new TableColumn<>("Algorithm Analysis");
+        dataPointCol.setMinWidth(table.getWidth());
+        dataPointCol.setCellValueFactory(
+                new PropertyValueFactory<>("dataPointAnalysis"));
+
+        dataPointCol.setCellFactory(TextFieldTableCell.<AlgorithmResult>forTableColumn());
+        dataPointCol.setOnEditCommit(
+                (CellEditEvent<AlgorithmResult, String> t) -> {
+                    ((AlgorithmResult) t.getTableView().getItems().get(
+                            t.getTablePosition().getRow())).setDataPointAnalysis(t.getNewValue());
+                });
+
+        table.setItems(data);
+        table.getColumns().addAll(dataPointCol);
+
         final VBox vbox = new VBox();
         vbox.setSpacing(5);
         vbox.setPadding(new Insets(10, 0, 0, 10));
         vbox.getChildren().addAll(table);
- 
+
         grid2.add(vbox, 1, 2);
     }
-    
-    
+
     /**
      * Method: averageStockByMonth Description: Create a list of stocks that
      * represent the average for the months throughout the years
@@ -516,6 +536,7 @@ public class StockTrends extends Application {
     }
 
     private List<String> profitPointsList;
+
     /**
      * Method: simpleAlgo Description: Simple stock buying and selling
      * algorithm.
@@ -561,7 +582,7 @@ public class StockTrends extends Application {
         lossPoints = FXCollections.observableArrayList();
         profit = new BigDecimal(0);
         profitPointsList = new ArrayList<>();
-        
+
         for (int i = stockData.length - 1; i > 200; i -= 50) {
             Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
             calculateMovingAverages(tempPeriod);
@@ -570,7 +591,7 @@ public class StockTrends extends Application {
 
         /*
         Add the three profit, neutral, and loss results to the graph 
-        */
+         */
         XYChart.Series profitPointsSeries = new XYChart.Series<>("Profit Points", profitPoints);
         XYChart.Series neutralPointsSeries = new XYChart.Series<>("Neutral Points", neutralPoints);
         XYChart.Series lossPointsSeries = new XYChart.Series<>("Loss Points", lossPoints);
