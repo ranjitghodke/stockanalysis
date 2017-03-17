@@ -108,16 +108,17 @@ public class StockTrends extends Application {
             @Override
             public void handle(ActionEvent event) {
                 companySelected = textField.getText();
-                currentStage.setScene(scene2);
                 try {
                     companyStockData = getStockData(companySelected);
                     createDailyGraph(companyStockData); //Daily graph by default
                     runSimpleAlgo(companyStockData); //Calculate the moving averages
                 } catch (FileNotFoundException ex) {
-                    Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
+                    return; //Wrong company
                 } catch (IOException ex) {
                     Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                currentStage.setScene(scene2);
+                currentStage.centerOnScreen();
 
             }
         });
@@ -195,7 +196,10 @@ public class StockTrends extends Application {
         String completedYahooUrl = yahooUrl + companyName;
         URL csvUrl = new URL(completedYahooUrl);
 
-        InputStream csvInputStream = csvUrl.openStream();
+        InputStream csvInputStream;
+        
+        csvInputStream = csvUrl.openStream();
+              
         InputStreamReader initalStream = new InputStreamReader(csvInputStream);
 
         saveCSVFile(csvInputStream);
