@@ -35,6 +35,7 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableColumn.CellEditEvent;
 import javafx.scene.control.TableView;
@@ -84,7 +85,8 @@ public class StockTrends extends Application {
         //Different view children for inputting company data
         TextField textField = new TextField();
         Button btn = new Button();
-
+        Label label = new Label();
+        
         //The first Grid to retrieve user input
         grid1 = new GridPane();
         grid1.setAlignment(Pos.CENTER);
@@ -113,6 +115,8 @@ public class StockTrends extends Application {
                     createDailyGraph(companyStockData); //Daily graph by default
                     runSimpleAlgo(companyStockData); //Calculate the moving averages
                 } catch (FileNotFoundException ex) {
+                    label.setText("Please re-enter the company name");
+                    grid1.add(label, 0, 2);
                     return; //Wrong company
                 } catch (IOException ex) {
                     Logger.getLogger(StockTrends.class.getName()).log(Level.SEVERE, null, ex);
