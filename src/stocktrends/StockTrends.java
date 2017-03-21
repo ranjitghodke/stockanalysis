@@ -365,9 +365,11 @@ public class StockTrends extends Application {
     public static class AlgorithmResult {
 
         private final SimpleStringProperty dataPointAnalysis;
+        private final SimpleStringProperty dateOfAnalysis; 
 
-        private AlgorithmResult(String dataPointAnalysis) {
+        private AlgorithmResult(String dataPointAnalysis, Date date) {
             this.dataPointAnalysis = new SimpleStringProperty(dataPointAnalysis);
+            this.dateOfAnalysis = new SimpleStringProperty(date.toString());
         }
 
         public String getDataPointAnalysis() {
@@ -377,12 +379,21 @@ public class StockTrends extends Application {
         public void setDataPointAnalysis(String dataPointAnalysis) {
             this.dataPointAnalysis.set(dataPointAnalysis);
         }
+        
+        public String getDateOfAnalysis() {
+            return dateOfAnalysis.get();
+        }
+
+        public void setDateOfAnalysis(String date) {
+            this.dateOfAnalysis.set(date);
+        }
     }
 
     /**
-     * Method: drawTable() Description: Draws a table with the buy and sell data
+     * Method: drawTable()
+     * Description: Draws a table with the buy and sell data
      */
-    private void drawTable(List<String> stringData) {
+    private void drawTable(List<AlgorithmData> stringData) {
         table = new TableView<>();
 
         ObservableList<AlgorithmResult> data
@@ -390,11 +401,12 @@ public class StockTrends extends Application {
 
         //Add the data to the data list
         stringData.forEach((s) -> {
-            data.add(new AlgorithmResult(s));
+            data.add(new AlgorithmResult(s.getDataPt(), s.getDate()));
         });
 
         table.setEditable(true);
 
+        //Column for the analysis
         TableColumn<AlgorithmResult, String> dataPointCol
                 = new TableColumn<>("Algorithm Analysis");
         dataPointCol.setMinWidth(table.getWidth());
@@ -408,8 +420,25 @@ public class StockTrends extends Application {
                             t.getTablePosition().getRow())).setDataPointAnalysis(t.getNewValue());
                 });
 
+        //Column for the date
+        TableColumn<AlgorithmResult, String> dateCol
+                = new TableColumn<>("Date of Occurance");
+        dateCol.setMinWidth(table.getWidth());
+        dateCol.setCellValueFactory(
+                new PropertyValueFactory<>("dateOfAnalysis"));
+
+        dateCol.setCellFactory(TextFieldTableCell.<AlgorithmResult>forTableColumn());
+        dateCol.setOnEditCommit(
+                (CellEditEvent<AlgorithmResult, String> t) -> {
+                    ((AlgorithmResult) t.getTableView().getItems().get(
+                            t.getTablePosition().getRow())).setDateOfAnalysis(t.getNewValue());
+                });
+
+        
         table.setItems(data);
         table.getColumns().addAll(dataPointCol);
+        table.getColumns().addAll(dateCol);
+
 
         final VBox vbox = new VBox();
         vbox.setSpacing(5);
@@ -543,7 +572,7 @@ public class StockTrends extends Application {
         System.out.println(" 50: " + movingAverage50 + " 100: " + movingAverage100 + " 200: " + movingAverage200);
     }
 
-    private List<String> profitPointsList;
+    private List<AlgorithmData> profitPointsList;
 
     /**
      * Method: simpleAlgo Description: Simple stock buying and selling
@@ -559,20 +588,20 @@ public class StockTrends extends Application {
         switch (movingAverage50.compareTo(movingAverage200)) {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
-                profitPointsList.add("You should buy @ " + s.getClose());
+                profitPointsList.add(new AlgorithmData(("You should buy @ " + s.getClose()), s.getDate()));
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             case 0:
-                profitPointsList.add("You should do nothing");
+                profitPointsList.add(new AlgorithmData("You should do nothing", s.getDate()));
                 neutralPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             case -1:
-                profitPointsList.add("You should sell @ " + s.getClose());
+                profitPointsList.add(new AlgorithmData("You should sell @ " + s.getClose(), s.getDate()));
                 profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
                 lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 break;
             default:
-                profitPointsList.add("Something has gone wrong; I recommend looking at the data yourself.");
+                profitPointsList.add(new AlgorithmData("Something has gone wrong; I recommend looking at the data yourself.", s.getDate()));
                 break;
         }
     }
@@ -626,7 +655,8 @@ public class StockTrends extends Application {
 //
 //        lineChart.setMinSize(900, 900);
 //        lineChart.getData().add(series);
-        profitPointsList.add("Net Profit with simple algo is: " + profit);
+
+        profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), new Date()));
         drawTable(profitPointsList);
     }
 
