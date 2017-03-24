@@ -3,6 +3,7 @@ package stocktrends;
 import com.opencsv.CSVReader;
 import java.awt.Desktop;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,6 +13,8 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -200,13 +203,20 @@ public class StockTrends extends Application {
         String completedYahooUrl = yahooUrl + companyName;
         URL csvUrl = new URL(completedYahooUrl);
 
+        URL website = csvUrl;
+        ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+        FileOutputStream fos = new FileOutputStream("csvData.csv");
+        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        
+        File initialFile = new File("csvData.csv");
+        
         InputStream csvInputStream;
         
-        csvInputStream = csvUrl.openStream();
-              
+        csvInputStream = new FileInputStream(initialFile);
+        
         InputStreamReader initalStream = new InputStreamReader(csvInputStream);
 
-        saveCSVFile(csvInputStream);
+        //saveCSVFile(csvInputStream);
 
         CSVReader reader = new CSVReader(initalStream);
 
