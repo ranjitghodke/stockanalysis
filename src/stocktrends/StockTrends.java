@@ -598,17 +598,20 @@ public class StockTrends extends Application {
         switch (movingAverage50.compareTo(movingAverage200)) {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
-                profitPointsList.add(new AlgorithmData(("You should buy @ " + s.getClose()), s.getDate()));
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
+                s.getDate().setYear(s.getDate().getYear() - 1900);
+                profitPointsList.add(new AlgorithmData("You should buy @ " + s.getClose(), s.getDate()));
                 break;
             case 0:
-                profitPointsList.add(new AlgorithmData("You should do nothing", s.getDate()));
                 neutralPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
+                s.getDate().setYear(s.getDate().getYear() - 1900);
+                profitPointsList.add(new AlgorithmData("You should do nothing", s.getDate()));
                 break;
             case -1:
-                profitPointsList.add(new AlgorithmData("You should sell @ " + s.getClose(), s.getDate()));
                 profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
                 lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
+                s.getDate().setYear(s.getDate().getYear() - 1900);
+                profitPointsList.add(new AlgorithmData("You should sell @ " + s.getClose(), s.getDate()));
                 break;
             default:
                 profitPointsList.add(new AlgorithmData("Something has gone wrong; I recommend looking at the data yourself.", s.getDate()));
@@ -670,6 +673,10 @@ public class StockTrends extends Application {
         drawTable(profitPointsList);
     }
 
+    private void runBuySellOnce(Stock[] data){
+        
+    }
+    
     /**
      * @param args the command line arguments
      */
