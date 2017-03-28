@@ -10,9 +10,9 @@ public class AlgorithmData {
 
     private String dataPt;
     
-    private Date date;
+    private String date;
     
-    public AlgorithmData(String dataPt, Date date){
+    public AlgorithmData(String dataPt, String date){
         this.dataPt = dataPt;
         this.date = date;
     }
@@ -21,7 +21,7 @@ public class AlgorithmData {
         return dataPt;
     }
     
-    public Date getDate(){
+    public String getDate(){
         return date;
     }
     

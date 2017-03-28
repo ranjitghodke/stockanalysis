@@ -89,7 +89,7 @@ public class StockTrends extends Application {
         TextField textField = new TextField();
         Button btn = new Button();
         Label label = new Label();
-        
+
         //The first Grid to retrieve user input
         grid1 = new GridPane();
         grid1.setAlignment(Pos.CENTER);
@@ -207,31 +207,36 @@ public class StockTrends extends Application {
         ReadableByteChannel rbc = Channels.newChannel(website.openStream());
         FileOutputStream fos = new FileOutputStream("csvData.csv");
         fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-        
+
         File initialFile = new File("csvData.csv");
-        
+
         InputStream csvInputStream;
-        
+
         csvInputStream = new FileInputStream(initialFile);
-        
+
         InputStreamReader initalStream = new InputStreamReader(csvInputStream);
 
         //saveCSVFile(csvInputStream);
-
         CSVReader reader = new CSVReader(initalStream);
 
         String[] nextLine = reader.readNext(); //Discard column headers 
         while ((nextLine = reader.readNext()) != null) {
             // nextLine[] is an array of values from the line
-            Stock stock = new Stock((nextLine[0]),
-                    new BigDecimal(nextLine[1]), new BigDecimal(nextLine[2]),
-                    new BigDecimal(nextLine[3]), new BigDecimal(nextLine[4]),
-                    new BigDecimal(nextLine[5]), new BigDecimal(nextLine[6]));
+
+            //(String date, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, BigDecimal volume, BigDecimal adjClose)
+            Stock stock = new Stock.Builder(nextLine[0], new BigDecimal(nextLine[4]))
+                    .open(nextLine[1])
+                    .high(nextLine[2])
+                    .low(nextLine[3])
+                    .volume(nextLine[5])
+                    .adjClose(nextLine[6])
+                    .build();
+
             stockData.add(stock);
         }
 
         Stock[] answer = stockData.toArray(new Stock[stockData.size()]);
-
+        
         return answer;
     }
 
@@ -253,7 +258,7 @@ public class StockTrends extends Application {
         series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
-        for (Stock s : stockData) {
+        for (Stock s : stockData) {          
             series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
         }
 
@@ -375,11 +380,11 @@ public class StockTrends extends Application {
     public static class AlgorithmResult {
 
         private final SimpleStringProperty dataPointAnalysis;
-        private final SimpleStringProperty dateOfAnalysis; 
+        private final SimpleStringProperty dateOfAnalysis;
 
-        private AlgorithmResult(String dataPointAnalysis, Date date) {
+        private AlgorithmResult(String dataPointAnalysis, String date) {
             this.dataPointAnalysis = new SimpleStringProperty(dataPointAnalysis);
-            this.dateOfAnalysis = new SimpleStringProperty(date.toString());
+            this.dateOfAnalysis = new SimpleStringProperty(date);
         }
 
         public String getDataPointAnalysis() {
@@ -389,7 +394,7 @@ public class StockTrends extends Application {
         public void setDataPointAnalysis(String dataPointAnalysis) {
             this.dataPointAnalysis.set(dataPointAnalysis);
         }
-        
+
         public String getDateOfAnalysis() {
             return dateOfAnalysis.get();
         }
@@ -400,8 +405,7 @@ public class StockTrends extends Application {
     }
 
     /**
-     * Method: drawTable()
-     * Description: Draws a table with the buy and sell data
+     * Method: drawTable() Description: Draws a table with the buy and sell data
      */
     private void drawTable(List<AlgorithmData> stringData) {
         table = new TableView<>();
@@ -444,11 +448,9 @@ public class StockTrends extends Application {
                             t.getTablePosition().getRow())).setDateOfAnalysis(t.getNewValue());
                 });
 
-        
         table.setItems(data);
         table.getColumns().addAll(dataPointCol);
         table.getColumns().addAll(dateCol);
-
 
         final VBox vbox = new VBox();
         vbox.setSpacing(5);
@@ -474,6 +476,7 @@ public class StockTrends extends Application {
             int currentMonth = stockData[i].getMonth();
             int currentYear = stockData[i].getYear();
             for (int j = i; j < stockData.length; j++) {
+                //    public Stock(int year, int month, BigDecimal close){
                 //If the entry is the same month, add to value and increment count
                 if (stockData[j].getMonth() == currentMonth) {
                     value = value.add(stockData[j].getClose());
@@ -482,7 +485,8 @@ public class StockTrends extends Application {
                 //If it is a new month, compute the previous monthly stock average
                 if (stockData[j].getMonth() != currentMonth) {
                     average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
-                    Stock monthStock = new Stock(currentYear, currentMonth, average);
+                    Stock monthStock = new Stock.Builder(currentYear + "-" + currentMonth + "-" + "1", average)
+                            .build();
                     stockDataByMonth.add(monthStock);
                     value = new BigDecimal(0);
                     count = 0;
@@ -492,7 +496,8 @@ public class StockTrends extends Application {
                 //For the last section of years
                 if (i == stockData.length - 1) {
                     average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
-                    Stock monthStock = new Stock(currentYear, currentMonth, average);
+                    Stock monthStock = new Stock.Builder(currentYear + "-" + currentMonth + "-" + "1", average)
+                            .build();
                     stockDataByMonth.add(monthStock);
                     count = 0;
                     break;
@@ -526,7 +531,8 @@ public class StockTrends extends Application {
                 //If it is a new year, compute the yearly stock average
                 if (stockData[j].getYear() != currentYear) {
                     average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
-                    Stock yearStock = new Stock(currentYear, average);
+                    Stock yearStock = new Stock.Builder(currentYear + "-" + 1 + "-" + "1", average)
+                            .build();
                     stockDataByYear.add(yearStock);
                     value = new BigDecimal(0);
                     count = 0;
@@ -536,7 +542,8 @@ public class StockTrends extends Application {
                 //For the last section of years
                 if (i == stockData.length - 1) {
                     average = value.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
-                    Stock yearStock = new Stock(currentYear, average);
+                    Stock yearStock = new Stock.Builder(currentYear + "-" + 1 + "-" + "1", average)
+                            .build();
                     stockDataByYear.add(yearStock);
                     count = 0;
                     break;
@@ -599,18 +606,15 @@ public class StockTrends extends Application {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
-                s.getDate().setYear(s.getDate().getYear() - 1900);
                 profitPointsList.add(new AlgorithmData("You should buy @ " + s.getClose(), s.getDate()));
                 break;
             case 0:
                 neutralPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
-                s.getDate().setYear(s.getDate().getYear() - 1900);
                 profitPointsList.add(new AlgorithmData("You should do nothing", s.getDate()));
                 break;
             case -1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
                 lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
-                s.getDate().setYear(s.getDate().getYear() - 1900);
                 profitPointsList.add(new AlgorithmData("You should sell @ " + s.getClose(), s.getDate()));
                 break;
             default:
@@ -668,15 +672,14 @@ public class StockTrends extends Application {
 //
 //        lineChart.setMinSize(900, 900);
 //        lineChart.getData().add(series);
-
-        profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), new Date()));
+        profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), ""));
         drawTable(profitPointsList);
     }
 
-    private void runBuySellOnce(Stock[] data){
-        
+    private void runBuySellOnce(Stock[] data) {
+
     }
-    
+
     /**
      * @param args the command line arguments
      */
