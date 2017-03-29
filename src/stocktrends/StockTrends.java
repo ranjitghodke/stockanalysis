@@ -271,7 +271,7 @@ public class StockTrends extends Application {
 
         //TODO: Redo this logic 
         if (graphDisplayed) {
-            grid2.getChildren().remove(2); //Remove the previous graph
+            grid2.getChildren().remove(2,grid2.getChildren().size()); //Remove the previous graph
         }
 
         //Add the chart as the third node child since the first,second child is the button
@@ -307,7 +307,7 @@ public class StockTrends extends Application {
 
         //TODO: Redo this logic 
         if (graphDisplayed) {
-            grid2.getChildren().remove(2); //Remove the previous graph
+            grid2.getChildren().remove(2,grid2.getChildren().size()); //Remove the previous graph
         }
 
         //Add the chart as the third node child since the first,second child is the button
@@ -364,7 +364,7 @@ public class StockTrends extends Application {
 
         //TODO: Redo this logic
         if (graphDisplayed) {
-            grid2.getChildren().remove(2); //Remove the previous graph
+            grid2.getChildren().remove(2,grid2.getChildren().size()); //Remove the previous graph
         }
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
