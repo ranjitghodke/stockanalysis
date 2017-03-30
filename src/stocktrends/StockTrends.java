@@ -676,8 +676,27 @@ public class StockTrends extends Application {
         drawTable(profitPointsList);
     }
 
+    /**
+     * runBuySellOnce(Stock[] data)
+     * Computes the best time to buy and sell a share a stock over the course
+     * of the company's history. 
+     * @param data 
+     */
     private void runBuySellOnce(Stock[] data) {
-
+        double profit = 0.0;
+        double minStockClose = Double.MAX_VALUE;
+        Stock minStock;
+        Stock maxStock;
+        for (Stock s: data){
+            if(profit < s.getClose().doubleValue() - minStockClose){
+                maxStock = s;
+                profit = s.getClose().doubleValue() - minStockClose;
+            }
+            if(s.getClose().doubleValue() < minStockClose) {
+                minStock = s;
+                minStockClose = s.getClose().doubleValue();
+            }
+        }
     }
 
     /**
