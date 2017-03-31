@@ -116,7 +116,8 @@ public class StockTrends extends Application {
                 try {
                     companyStockData = getStockData(companySelected);
                     createDailyGraph(companyStockData); //Daily graph by default
-                    runSimpleAlgo(companyStockData); //Calculate the moving averages
+                    //runSimpleAlgo(companyStockData); //Calculate the moving averages
+                    runBuySellOnce(companyStockData);
                 } catch (FileNotFoundException ex) {
                     label.setText("Please re-enter the company name");
                     grid1.add(label, 0, 2);
@@ -682,11 +683,11 @@ public class StockTrends extends Application {
      * of the company's history. 
      * @param data 
      */
-    private void runBuySellOnce(Stock[] data) {
+    private double runBuySellOnce(Stock[] data) {
         double profit = 0.0;
         double minStockClose = Double.MAX_VALUE;
-        Stock minStock;
-        Stock maxStock;
+        Stock minStock = null;
+        Stock maxStock = null;
         for (Stock s: data){
             if(profit < s.getClose().doubleValue() - minStockClose){
                 maxStock = s;
@@ -697,6 +698,17 @@ public class StockTrends extends Application {
                 minStockClose = s.getClose().doubleValue();
             }
         }
+        
+        profitPointsList = new ArrayList<>();
+        profitPointsList.add(new AlgorithmData("You should buy @ " + minStock.getClose(), minStock.getDate()));
+        profitPointsList.add(new AlgorithmData("You should sell @ " + maxStock.getClose(), maxStock.getDate()));
+        profit = maxStock.getClose().doubleValue() - minStock.getClose().doubleValue();
+        profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), ""));
+
+        drawTable(profitPointsList);
+
+        
+        return profit;
     }
 
     /**
