@@ -699,6 +699,9 @@ public class StockTrends extends Application {
             }
         }
         
+        /*
+        Add data points to the data table 
+        */
         profitPointsList = new ArrayList<>();
         profitPointsList.add(new AlgorithmData("You should buy @ " + minStock.getClose(), minStock.getDate()));
         profitPointsList.add(new AlgorithmData("You should sell @ " + maxStock.getClose(), maxStock.getDate()));
