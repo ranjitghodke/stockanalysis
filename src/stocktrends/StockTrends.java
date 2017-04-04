@@ -76,7 +76,7 @@ public class StockTrends extends Application {
     private static enum TIMEFRAME {
         Daily, Monthly, Yearly
     }
-
+    
     /**
      * The method called to start the program
      *
@@ -162,10 +162,35 @@ public class StockTrends extends Application {
                         createYearGraph(yearlyStockData);
                         break;
                 }
-                runSimpleAlgo(companyStockData); //Calculate the moving averages
             }
         });
 
+        
+        //The different algorithms you can select
+        ObservableList<String> algoOptions = FXCollections.observableArrayList();
+        algoOptions.add("Buy and Sell Once");
+        algoOptions.add("50 Day Moving Average");
+        
+        //Use combobox to select the different algorithms
+        final ComboBox cb2 = new ComboBox(algoOptions);
+        cb2.getSelectionModel().selectFirst(); //Select "Daily" as the default option
+        cb2.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+            String selectedOption = cb2.getSelectionModel().getSelectedItem().toString();
+            //Switch statement to change the graph appropriately
+            switch (selectedOption) {
+                case "Buy and Sell Once":
+                    runBuySellOnce(companyStockData);
+                    break;
+                case "50 Day Moving Average":
+                    runSimpleAlgo(companyStockData);
+                    break;
+            }
+            }
+        });
+        
+        
         Button btnOpenNewWindow = new Button();
         btnOpenNewWindow.setText("See raw CSV Data");
         btnOpenNewWindow.setOnAction(new EventHandler<ActionEvent>() {
@@ -180,6 +205,7 @@ public class StockTrends extends Application {
 
         //populating the series with data
         grid2.add(cb1, 0, 0);
+        grid2.add(cb2, 1, 0);
         grid2.add(btnOpenNewWindow, 0, 1);
 
         currentStage.setTitle("Stock Market Analysis");
@@ -272,7 +298,7 @@ public class StockTrends extends Application {
 
         //TODO: Redo this logic 
         if (graphDisplayed) {
-            grid2.getChildren().remove(2,grid2.getChildren().size()); //Remove the previous graph
+            grid2.getChildren().remove(3,grid2.getChildren().size()); //Remove the previous graph
         }
 
         //Add the chart as the third node child since the first,second child is the button
@@ -308,7 +334,7 @@ public class StockTrends extends Application {
 
         //TODO: Redo this logic 
         if (graphDisplayed) {
-            grid2.getChildren().remove(2,grid2.getChildren().size()); //Remove the previous graph
+            grid2.getChildren().remove(3,grid2.getChildren().size()); //Remove the previous graph
         }
 
         //Add the chart as the third node child since the first,second child is the button
@@ -365,7 +391,7 @@ public class StockTrends extends Application {
 
         //TODO: Redo this logic
         if (graphDisplayed) {
-            grid2.getChildren().remove(2,grid2.getChildren().size()); //Remove the previous graph
+            grid2.getChildren().remove(3,grid2.getChildren().size()); //Remove the previous graph
         }
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
