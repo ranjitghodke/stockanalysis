@@ -70,7 +70,7 @@ public class StockTrends extends Application {
     private BigDecimal profit;
     private ObservableList<XYChart.Data<Date, Number>> profitPoints, neutralPoints, lossPoints;
     private ObservableList<XYChart.Series<Date, Number>> series;
-    private LineChart<Number, Number> lineChart;
+    private LineChart<?, ?> lineChart;
 
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
@@ -282,6 +282,11 @@ public class StockTrends extends Application {
      * @param stockData
      */
     public void createDailyGraph(Stock[] stockData) {
+        //TODO: Redo this logic 
+        if (graphDisplayed) {
+            grid2.getChildren().remove(lineChart); //Remove the previous graph
+        }
+        
         series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
@@ -293,13 +298,8 @@ public class StockTrends extends Application {
 
         NumberAxis numberAxis = new NumberAxis();
         DateAxis dateAxis = new DateAxis();
-        LineChart<Date, Number> lineChart = new LineChart<>(dateAxis, numberAxis, series);
+        lineChart = new LineChart<Date, Number>(dateAxis, numberAxis, series);
         lineChart.setMinSize(900, 900);
-
-        //TODO: Redo this logic 
-        if (graphDisplayed) {
-            grid2.getChildren().remove(3,grid2.getChildren().size()); //Remove the previous graph
-        }
 
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
@@ -316,6 +316,11 @@ public class StockTrends extends Application {
      * @param stockData
      */
     public void createMonthlyGraph(Stock[] stockData) {
+        //TODO: Redo this logic 
+        if (graphDisplayed) {
+            grid2.getChildren().remove(lineChart); //Remove the previous graph
+        }
+        
         series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
@@ -329,13 +334,8 @@ public class StockTrends extends Application {
 
         NumberAxis numberAxis = new NumberAxis();
         DateAxis dateAxis = new DateAxis();
-        LineChart<Date, Number> lineChart = new LineChart<>(dateAxis, numberAxis, series);
+        lineChart = new LineChart<Date, Number>(dateAxis, numberAxis, series);
         lineChart.setMinSize(900, 900);
-
-        //TODO: Redo this logic 
-        if (graphDisplayed) {
-            grid2.getChildren().remove(3,grid2.getChildren().size()); //Remove the previous graph
-        }
 
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
@@ -352,6 +352,12 @@ public class StockTrends extends Application {
      */
     public void createYearGraph(Stock[] stockData) {
 
+        //TODO: Redo this logic
+        if (graphDisplayed) {
+            grid2.getChildren().remove(lineChart); //Remove the previous graph
+        }
+
+        
         final NumberAxis xAxis = new NumberAxis(stockData[stockData.length - 1].getYear(), stockData[0].getYear(), 1);
         final DecimalFormat format = new DecimalFormat("####"); //Remove commas in thousand place ex) 1,000 -> 1000
         xAxis.setTickLabelFormatter(new StringConverter<Number>() {
@@ -389,10 +395,6 @@ public class StockTrends extends Application {
         lineChart.setMinSize(900, 900);
         lineChart.getData().add(series);
 
-        //TODO: Redo this logic
-        if (graphDisplayed) {
-            grid2.getChildren().remove(3,grid2.getChildren().size()); //Remove the previous graph
-        }
         //Add the chart as the third node child since the first,second child is the button
         grid2.add(lineChart, 0, 2);
 
