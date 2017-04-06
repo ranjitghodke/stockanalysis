@@ -71,12 +71,17 @@ public class StockTrends extends Application {
     private ObservableList<XYChart.Data<Date, Number>> profitPoints, neutralPoints, lossPoints;
     private ObservableList<XYChart.Series<Date, Number>> series;
     private LineChart<?, ?> lineChart;
+    private String selectedGraph;
 
+    XYChart.Series profitPointsSeries;
+    XYChart.Series neutralPointsSeries;
+    XYChart.Series lossPointsSeries;
+    
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
         Daily, Monthly, Yearly
     }
-    
+
     /**
      * The method called to start the program
      *
@@ -147,9 +152,9 @@ public class StockTrends extends Application {
         cb1.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                String selectedOption = cb1.getSelectionModel().getSelectedItem().toString();
+                selectedGraph = cb1.getSelectionModel().getSelectedItem().toString();
                 //Switch statement to change the graph appropriately
-                switch (TIMEFRAME.valueOf(selectedOption)) {
+                switch (TIMEFRAME.valueOf(selectedGraph)) {
                     case Daily:
                         createDailyGraph(companyStockData);
                         break;
@@ -165,32 +170,31 @@ public class StockTrends extends Application {
             }
         });
 
-        
         //The different algorithms you can select
         ObservableList<String> algoOptions = FXCollections.observableArrayList();
         algoOptions.add("Buy and Sell Once");
         algoOptions.add("50 Day Moving Average");
-        
+
         //Use combobox to select the different algorithms
         final ComboBox cb2 = new ComboBox(algoOptions);
         cb2.getSelectionModel().selectFirst(); //Select "Daily" as the default option
         cb2.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-            String selectedOption = cb2.getSelectionModel().getSelectedItem().toString();
-            //Switch statement to change the graph appropriately
-            switch (selectedOption) {
-                case "Buy and Sell Once":
-                    runBuySellOnce(companyStockData);
-                    break;
-                case "50 Day Moving Average":
-                    runSimpleAlgo(companyStockData);
-                    break;
-            }
+                String selectedOption = cb2.getSelectionModel().getSelectedItem().toString();
+                //Switch statement to change the graph appropriately
+                switch (selectedOption) {
+                    case "Buy and Sell Once":
+                        runBuySellOnce(companyStockData);
+                        resetGraph();
+                        break;
+                    case "50 Day Moving Average":
+                        runSimpleAlgo(companyStockData);
+                        break;
+                }
             }
         });
-        
-        
+
         Button btnOpenNewWindow = new Button();
         btnOpenNewWindow.setText("See raw CSV Data");
         btnOpenNewWindow.setOnAction(new EventHandler<ActionEvent>() {
@@ -211,6 +215,16 @@ public class StockTrends extends Application {
         currentStage.setTitle("Stock Market Analysis");
         currentStage.setScene(scene1);
         currentStage.show();
+    }
+
+    /**
+     * Method: resetGraph()
+     * Description: removes the different profit,neutral, and loss lines
+     */
+    private void resetGraph() {
+        series.remove(profitPointsSeries);
+        series.remove(neutralPointsSeries);
+        series.remove(lossPointsSeries);
     }
 
     /**
@@ -263,7 +277,7 @@ public class StockTrends extends Application {
         }
 
         Stock[] answer = stockData.toArray(new Stock[stockData.size()]);
-        
+
         return answer;
     }
 
@@ -286,11 +300,11 @@ public class StockTrends extends Application {
         if (graphDisplayed) {
             grid2.getChildren().remove(lineChart); //Remove the previous graph
         }
-        
+
         series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
-        for (Stock s : stockData) {          
+        for (Stock s : stockData) {
             series1Data.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
         }
 
@@ -320,7 +334,7 @@ public class StockTrends extends Application {
         if (graphDisplayed) {
             grid2.getChildren().remove(lineChart); //Remove the previous graph
         }
-        
+
         series = FXCollections.observableArrayList();
 
         ObservableList<XYChart.Data<Date, Number>> series1Data = FXCollections.observableArrayList();
@@ -357,7 +371,6 @@ public class StockTrends extends Application {
             grid2.getChildren().remove(lineChart); //Remove the previous graph
         }
 
-        
         final NumberAxis xAxis = new NumberAxis(stockData[stockData.length - 1].getYear(), stockData[0].getYear(), 1);
         final DecimalFormat format = new DecimalFormat("####"); //Remove commas in thousand place ex) 1,000 -> 1000
         xAxis.setTickLabelFormatter(new StringConverter<Number>() {
@@ -675,9 +688,9 @@ public class StockTrends extends Application {
         /*
         Add the three profit, neutral, and loss results to the graph 
          */
-        XYChart.Series profitPointsSeries = new XYChart.Series<>("Profit Points", profitPoints);
-        XYChart.Series neutralPointsSeries = new XYChart.Series<>("Neutral Points", neutralPoints);
-        XYChart.Series lossPointsSeries = new XYChart.Series<>("Loss Points", lossPoints);
+        profitPointsSeries = new XYChart.Series<>("Profit Points", profitPoints);
+        neutralPointsSeries = new XYChart.Series<>("Neutral Points", neutralPoints);
+        lossPointsSeries = new XYChart.Series<>("Loss Points", lossPoints);
 
         series.add(profitPointsSeries);
         series.add(neutralPointsSeries);
@@ -706,30 +719,30 @@ public class StockTrends extends Application {
     }
 
     /**
-     * runBuySellOnce(Stock[] data)
-     * Computes the best time to buy and sell a share a stock over the course
-     * of the company's history. 
-     * @param data 
+     * runBuySellOnce(Stock[] data) Computes the best time to buy and sell a
+     * share a stock over the course of the company's history.
+     *
+     * @param data
      */
     private double runBuySellOnce(Stock[] data) {
         double profit = 0.0;
         double minStockClose = Double.MAX_VALUE;
         Stock minStock = null;
         Stock maxStock = null;
-        for (Stock s: data){
-            if(profit < s.getClose().doubleValue() - minStockClose){
+        for (Stock s : data) {
+            if (profit < s.getClose().doubleValue() - minStockClose) {
                 maxStock = s;
                 profit = s.getClose().doubleValue() - minStockClose;
             }
-            if(s.getClose().doubleValue() < minStockClose) {
+            if (s.getClose().doubleValue() < minStockClose) {
                 minStock = s;
                 minStockClose = s.getClose().doubleValue();
             }
         }
-        
+
         /*
         Add data points to the data table 
-        */
+         */
         profitPointsList = new ArrayList<>();
         profitPointsList.add(new AlgorithmData("You should buy @ " + minStock.getClose(), minStock.getDate()));
         profitPointsList.add(new AlgorithmData("You should sell @ " + maxStock.getClose(), maxStock.getDate()));
@@ -738,7 +751,6 @@ public class StockTrends extends Application {
 
         drawTable(profitPointsList);
 
-        
         return profit;
     }
 
