@@ -173,6 +173,7 @@ public class StockTrends extends Application {
         //The different algorithms you can select
         ObservableList<String> algoOptions = FXCollections.observableArrayList();
         algoOptions.add("Buy and Sell Once");
+        algoOptions.add("Buy and Sell Twice");
         algoOptions.add("50 Day Moving Average");
 
         //Use combobox to select the different algorithms
@@ -186,6 +187,10 @@ public class StockTrends extends Application {
                 switch (selectedOption) {
                     case "Buy and Sell Once":
                         runBuySellOnce(companyStockData);
+                        resetGraph();
+                        break;
+                    case "Buy and Sell Twice":
+                        runBuySellTwice(companyStockData);
                         resetGraph();
                         break;
                     case "50 Day Moving Average":
@@ -748,6 +753,74 @@ public class StockTrends extends Application {
         profitPointsList.add(new AlgorithmData("You should sell @ " + maxStock.getClose(), maxStock.getDate()));
         profit = maxStock.getClose().doubleValue() - minStock.getClose().doubleValue();
         profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), ""));
+
+        drawTable(profitPointsList);
+
+        return profit;
+    }
+    
+     /**
+     * runBuySellTwice(Stock[] data)
+     * Computes the best time to buy and sell a
+     * share a stock twice over the course of the company's history.
+     *
+     * @param data
+     */
+    private double runBuySellTwice(Stock[] data) {
+        double profit = 0.0;
+        List<Double> firstProfit = new ArrayList<>();
+        double minStockClose = Double.MAX_VALUE;
+ 
+        Stock firstStockMin = null, firstStockMax = null, secondStockMin = null, secondStockMax = null;
+        
+        //Getting max profit first pass
+        for(int i = 0; i<data.length; i++){
+            //Get min stock
+            //minStockClose = Math.min(minStockClose, data[i].getClose().doubleValue());
+            if(minStockClose > data[i].getClose().doubleValue()){
+                minStockClose = data[i].getClose().doubleValue();
+                firstStockMin = data[i];
+            }
+            
+            //Get max stock
+            //profit = Math.max(profit, data[i].getClose().doubleValue() - minStockClose);
+            if(profit < (data[i].getClose().doubleValue() - minStockClose) ){
+                profit = (data[i].getClose().doubleValue() - minStockClose);
+                firstStockMax = data[i];
+            }
+            
+            firstProfit.add(profit);
+        }
+        
+        //Second pass profits
+        double maxPriceClose = Double.MIN_VALUE;
+        for(int i = data.length-1;i>0; i--){
+            //Get max close
+            //maxPriceClose = Math.max(maxPriceClose, data[i].getClose().doubleValue());
+            if(maxPriceClose < (data[i].getClose().doubleValue()) ){
+                maxPriceClose = (data[i].getClose().doubleValue());
+                secondStockMax = data[i];
+            }
+            
+            //Get min close
+            //profit = Math.max(profit, (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1)));
+            if(profit < (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1))){
+                profit = (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1));
+                secondStockMin = data[i];
+            }
+        }
+        
+        
+        /*
+        Add data points to the data table 
+0         */
+        profitPointsList = new ArrayList<>();
+        profitPointsList.add(new AlgorithmData("You should buy @ " + firstStockMin.getClose(), firstStockMin.getDate()));
+        profitPointsList.add(new AlgorithmData("You should sell @ " + firstStockMax.getClose(), firstStockMax.getDate()));
+        profitPointsList.add(new AlgorithmData("You should buy @ " + secondStockMin.getClose(), secondStockMin.getDate()));
+        profitPointsList.add(new AlgorithmData("You should sell @ " + secondStockMax.getClose(), secondStockMax.getDate()));
+        profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), ""));
+        
 
         drawTable(profitPointsList);
 
