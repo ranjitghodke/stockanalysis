@@ -66,12 +66,12 @@ public class StockTrends extends Application {
     private Stock[] companyStockData;
     private boolean graphDisplayed;
     private File csvFile;
-    private BigDecimal movingAverage50, movingAverage100, movingAverage200;
     private BigDecimal profit;
     private ObservableList<XYChart.Data<Date, Number>> profitPoints, neutralPoints, lossPoints;
     private ObservableList<XYChart.Series<Date, Number>> series;
     private LineChart<?, ?> lineChart;
     private String selectedGraph;
+    private List<AlgorithmData> profitPointsList;
 
     XYChart.Series profitPointsSeries;
     XYChart.Series neutralPointsSeries;
@@ -601,42 +601,45 @@ public class StockTrends extends Application {
     }
 
     /**
-     * Method: calculatMovingAverage Description: This method is used to
+     * Method: calculateMovingAverages Description: This method is used to
      * calculate the moving averages for the different sample sizes(50, 100, and
      * 200).
      *
      * @param stockData
      */
-    private void calculateMovingAverages(Stock[] stockData) {
+    private BigDecimal[] calculateMovingAverages(Stock[] stockData, int movingAverageSmall, int movingAverageLarge) {
+        BigDecimal[] movingAverageStocks = new BigDecimal[2];
+        BigDecimal movingAverageSmallStock = null;
+        BigDecimal movingAverageLargeStock = null;
         //Condition that not even 50 days exist - Use what you have
-        if (stockData.length < 50) {
+        if (stockData.length < movingAverageSmall) {
             BigDecimal value = new BigDecimal(0);
             for (Stock stock : stockData) {
                 value = value.add(stock.getClose());
             }
-            movingAverage50 = value.divide(new BigDecimal(stockData.length), 2, RoundingMode.HALF_UP);
-        } //If >50 days exist. If corner case like 99 entries exist; only assign 
+            movingAverageSmallStock = value.divide(new BigDecimal(stockData.length), 2, RoundingMode.HALF_UP);
+        }
+        //If >50 days exist. If corner case like 99 entries exist; only assign 
         //the 50 day moving average
         else {
             //Variable used to add the value of the daily stocks in order to compute the yearly average
             BigDecimal value = new BigDecimal(0);
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < movingAverageLarge; i++) {
                 value = value.add(stockData[i].getClose());
-                if (i == 49) {
-                    movingAverage50 = value.divide(new BigDecimal(50), 2, RoundingMode.HALF_UP); //the moving average for the top 50 entries
+                if (i == movingAverageSmall - 1) {
+                    movingAverageSmallStock = value.divide(new BigDecimal(movingAverageSmall), 2, RoundingMode.HALF_UP); //the moving average for the top 50 entries
                 }
-                if (i == 99) {
-                    movingAverage100 = value.divide(new BigDecimal(100), 2, RoundingMode.HALF_UP); //the moving average for the top 100 entries
-                }
-                if (i == 199) {
-                    movingAverage200 = value.divide(new BigDecimal(200), 2, RoundingMode.HALF_UP); //the moving average for the top 200 entries
+                if (i == movingAverageLarge - 1) {
+                    movingAverageLargeStock = value.divide(new BigDecimal(movingAverageLarge), 2, RoundingMode.HALF_UP); //the moving average for the top 200 entries
                 }
             }
         }
-        System.out.println(" 50: " + movingAverage50 + " 100: " + movingAverage100 + " 200: " + movingAverage200);
+        movingAverageStocks[0] = movingAverageSmallStock;
+        movingAverageStocks[1] = movingAverageLargeStock;
+        System.out.println(movingAverageSmall + " : " + movingAverageSmallStock + movingAverageLarge + " : " + movingAverageLargeStock);
+        return movingAverageStocks;
     }
 
-    private List<AlgorithmData> profitPointsList;
 
     /**
      * Method: simpleAlgo Description: Simple stock buying and selling
@@ -648,8 +651,8 @@ public class StockTrends extends Application {
      *
      * @param stockData
      */
-    private void simpleAlgo(Stock s) {
-        switch (movingAverage50.compareTo(movingAverage200)) {
+    private void simpleAlgo(Stock s, BigDecimal movingAverageSmall, BigDecimal movingAverageLarge) {
+        switch (movingAverageSmall.compareTo(movingAverageLarge)) {
             case 1:
                 profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
@@ -686,8 +689,8 @@ public class StockTrends extends Application {
 
         for (int i = stockData.length - 1; i > 200; i -= 50) {
             Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
-            calculateMovingAverages(tempPeriod);
-            simpleAlgo(tempPeriod[0]);
+            BigDecimal[] movingAverageStocks = calculateMovingAverages(tempPeriod, 50, 200);
+            simpleAlgo(tempPeriod[0], movingAverageStocks[0], movingAverageStocks[1]);
         }
 
         /*
