@@ -19,6 +19,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -76,7 +77,7 @@ public class StockTrends extends Application {
     XYChart.Series profitPointsSeries;
     XYChart.Series neutralPointsSeries;
     XYChart.Series lossPointsSeries;
-    
+
     //The selected time frame to display analysis for
     private static enum TIMEFRAME {
         Daily, Monthly, Yearly
@@ -175,6 +176,7 @@ public class StockTrends extends Application {
         algoOptions.add("Buy and Sell Once");
         algoOptions.add("Buy and Sell Twice");
         algoOptions.add("50 Day Moving Average");
+        algoOptions.add("Find best average");
 
         //Use combobox to select the different algorithms
         final ComboBox cb2 = new ComboBox(algoOptions);
@@ -195,6 +197,14 @@ public class StockTrends extends Application {
                         break;
                     case "50 Day Moving Average":
                         runSimpleAlgo(companyStockData);
+                        break;
+                    case "Find best average":
+                        Thread t = new Thread(new Runnable(){
+                        @Override
+                            public void run() {
+                                runCustomAlgo(companyStockData);
+                        }});
+                        t.start();
                         break;
                 }
             }
@@ -223,8 +233,8 @@ public class StockTrends extends Application {
     }
 
     /**
-     * Method: resetGraph()
-     * Description: removes the different profit,neutral, and loss lines
+     * Method: resetGraph() Description: removes the different profit,neutral,
+     * and loss lines
      */
     private void resetGraph() {
         series.remove(profitPointsSeries);
@@ -245,8 +255,9 @@ public class StockTrends extends Application {
 
         List<Stock> stockData = new ArrayList<>();
 
-        String yahooUrl = "http://real-chart.finance.yahoo.com/table.csv?s=";
-        String completedYahooUrl = yahooUrl + companyName;
+        //http://www.google.com/finance/historical?q=NASDAQ%3AGOOG&ei=C_jrWMHVIoKrjAG5pLa4CA&output=csv
+        
+        String completedYahooUrl = "http://real-chart.finance.yahoo.com/table.csv?s=" + companyName;
         URL csvUrl = new URL(completedYahooUrl);
 
         URL website = csvUrl;
@@ -609,8 +620,8 @@ public class StockTrends extends Application {
      */
     private BigDecimal[] calculateMovingAverages(Stock[] stockData, int movingAverageSmall, int movingAverageLarge) {
         BigDecimal[] movingAverageStocks = new BigDecimal[2];
-        BigDecimal movingAverageSmallStock = null;
-        BigDecimal movingAverageLargeStock = null;
+        BigDecimal movingAverageSmallStock = new BigDecimal(0);
+        BigDecimal movingAverageLargeStock = new BigDecimal(0);
         //Condition that not even 50 days exist - Use what you have
         if (stockData.length < movingAverageSmall) {
             BigDecimal value = new BigDecimal(0);
@@ -618,8 +629,7 @@ public class StockTrends extends Application {
                 value = value.add(stock.getClose());
             }
             movingAverageSmallStock = value.divide(new BigDecimal(stockData.length), 2, RoundingMode.HALF_UP);
-        }
-        //If >50 days exist. If corner case like 99 entries exist; only assign 
+        } //If >50 days exist. If corner case like 99 entries exist; only assign 
         //the 50 day moving average
         else {
             //Variable used to add the value of the daily stocks in order to compute the yearly average
@@ -636,10 +646,9 @@ public class StockTrends extends Application {
         }
         movingAverageStocks[0] = movingAverageSmallStock;
         movingAverageStocks[1] = movingAverageLargeStock;
-        System.out.println(movingAverageSmall + " : " + movingAverageSmallStock + movingAverageLarge + " : " + movingAverageLargeStock);
+        //System.out.println(movingAverageSmall + " : " + movingAverageSmallStock + " " + movingAverageLarge + " : " + movingAverageLargeStock);
         return movingAverageStocks;
     }
-
 
     /**
      * Method: simpleAlgo Description: Simple stock buying and selling
@@ -651,10 +660,10 @@ public class StockTrends extends Application {
      *
      * @param stockData
      */
-    private void simpleAlgo(Stock s, BigDecimal movingAverageSmall, BigDecimal movingAverageLarge) {
+    private BigDecimal simpleAlgo(Stock s, BigDecimal movingAverageSmall, BigDecimal movingAverageLarge, BigDecimal curProfit) {
         switch (movingAverageSmall.compareTo(movingAverageLarge)) {
             case 1:
-                profit = profit.add(s.getClose().multiply(new BigDecimal(-50)));
+                curProfit = curProfit.add(s.getClose().multiply(new BigDecimal(-50)));
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 profitPointsList.add(new AlgorithmData("You should buy @ " + s.getClose(), s.getDate()));
                 break;
@@ -663,7 +672,7 @@ public class StockTrends extends Application {
                 profitPointsList.add(new AlgorithmData("You should do nothing", s.getDate()));
                 break;
             case -1:
-                profit = profit.add(s.getClose().multiply(new BigDecimal(50)));
+                curProfit = curProfit.add(s.getClose().multiply(new BigDecimal(50)));
                 lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 profitPointsList.add(new AlgorithmData("You should sell @ " + s.getClose(), s.getDate()));
                 break;
@@ -671,6 +680,8 @@ public class StockTrends extends Application {
                 profitPointsList.add(new AlgorithmData("Something has gone wrong; I recommend looking at the data yourself.", s.getDate()));
                 break;
         }
+
+        return curProfit;
     }
 
     /**
@@ -690,7 +701,7 @@ public class StockTrends extends Application {
         for (int i = stockData.length - 1; i > 200; i -= 50) {
             Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
             BigDecimal[] movingAverageStocks = calculateMovingAverages(tempPeriod, 50, 200);
-            simpleAlgo(tempPeriod[0], movingAverageStocks[0], movingAverageStocks[1]);
+            profit = simpleAlgo(tempPeriod[0], movingAverageStocks[0], movingAverageStocks[1], profit);
         }
 
         /*
@@ -724,6 +735,78 @@ public class StockTrends extends Application {
 //        lineChart.getData().add(series);
         profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), ""));
         drawTable(profitPointsList);
+    }
+
+    private class ProfitPoint {
+
+        int valueSmall;
+        int valueBig;
+        BigDecimal profit;
+
+        public ProfitPoint(int valueSmall, int valueBig, BigDecimal profit) {
+            this.valueSmall = valueSmall;
+            this.valueBig = valueBig;
+            this.profit = profit;
+        }
+    }
+
+    /**
+     * Method: runCustomAlgo Description: Method used to run the simpleAlgo
+     * method using ? day periods and simulating from the beginning of the
+     * company
+     *
+     * @param stockData
+     */
+    private void runCustomAlgo(Stock[] stockData) {
+
+        List<ProfitPoint> profitList = new ArrayList<>();
+        int i = 1;
+        int j = 1;
+        int k = stockData.length - 1;
+        try {
+
+            for (i = 1; i < stockData.length - 1; i++) { //smallAvg
+
+                for (j = 1; j < stockData.length - 1; j++) { //largeAvg
+
+                    //Calculation Operation
+                    profitPoints = FXCollections.observableArrayList();
+                    neutralPoints = FXCollections.observableArrayList();
+                    lossPoints = FXCollections.observableArrayList();
+                    profit = new BigDecimal(0);
+                    profitPointsList = new ArrayList<>();
+
+                    for (k = stockData.length - 1; k > j; k -= i) {
+                        Stock[] tempPeriod = Arrays.copyOfRange(stockData, (k - j), k);
+                        BigDecimal[] movingAverageStocks = calculateMovingAverages(tempPeriod, i, j);
+                        profit = simpleAlgo(tempPeriod[0], movingAverageStocks[0], movingAverageStocks[1], profit);
+                    }
+                    
+                    //At the end of the movingAvg Calcs, add the data. Use 200 and 50 as a checkpoint since I know the value is -767121.9889
+                    //It worked, the checkpoint reported: -767121.988900
+                    profitList.add(new ProfitPoint(i, j, profit));
+                    if (j == 200 && i == 50) {
+                        System.out.println("Checkpoint: " + profit);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(" i: " + i + " j: " + j + " k: " + k);
+        }
+
+        BigDecimal curMax = new BigDecimal(0);
+        int highI = 0, highJ = 0;
+        for (int x = 0; x < profitList.size(); x++) {
+            if (profitList.get(x).profit.compareTo(curMax) == 1) {
+                curMax = profitList.get(x).profit;
+                highI = profitList.get(x).valueSmall;
+                highJ = profitList.get(x).valueBig;
+            }
+        }
+
+        System.out.println("curMAX: " + curMax + " highI: " + highI + " highJ: " + highJ);
     }
 
     /**
@@ -761,10 +844,9 @@ public class StockTrends extends Application {
 
         return profit;
     }
-    
-     /**
-     * runBuySellTwice(Stock[] data)
-     * Computes the best time to buy and sell a
+
+    /**
+     * runBuySellTwice(Stock[] data) Computes the best time to buy and sell a
      * share a stock twice over the course of the company's history.
      *
      * @param data
@@ -773,47 +855,46 @@ public class StockTrends extends Application {
         double profit = 0.0;
         List<Double> firstProfit = new ArrayList<>();
         double minStockClose = Double.MAX_VALUE;
- 
+
         Stock firstStockMin = null, firstStockMax = null, secondStockMin = null, secondStockMax = null;
-        
+
         //Getting max profit first pass
-        for(int i = 0; i<data.length; i++){
+        for (int i = 0; i < data.length; i++) {
             //Get min stock
             //minStockClose = Math.min(minStockClose, data[i].getClose().doubleValue());
-            if(minStockClose > data[i].getClose().doubleValue()){
+            if (minStockClose > data[i].getClose().doubleValue()) {
                 minStockClose = data[i].getClose().doubleValue();
                 firstStockMin = data[i];
             }
-            
+
             //Get max stock
             //profit = Math.max(profit, data[i].getClose().doubleValue() - minStockClose);
-            if(profit < (data[i].getClose().doubleValue() - minStockClose) ){
+            if (profit < (data[i].getClose().doubleValue() - minStockClose)) {
                 profit = (data[i].getClose().doubleValue() - minStockClose);
                 firstStockMax = data[i];
             }
-            
+
             firstProfit.add(profit);
         }
-        
+
         //Second pass profits
         double maxPriceClose = Double.MIN_VALUE;
-        for(int i = data.length-1;i>0; i--){
+        for (int i = data.length - 1; i > 0; i--) {
             //Get max close
             //maxPriceClose = Math.max(maxPriceClose, data[i].getClose().doubleValue());
-            if(maxPriceClose < (data[i].getClose().doubleValue()) ){
+            if (maxPriceClose < (data[i].getClose().doubleValue())) {
                 maxPriceClose = (data[i].getClose().doubleValue());
                 secondStockMax = data[i];
             }
-            
+
             //Get min close
             //profit = Math.max(profit, (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1)));
-            if(profit < (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1))){
+            if (profit < (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1))) {
                 profit = (maxPriceClose - data[i].getClose().doubleValue() + firstProfit.get(i - 1));
                 secondStockMin = data[i];
             }
         }
-        
-        
+
         /*
         Add data points to the data table 
 0         */
@@ -823,7 +904,6 @@ public class StockTrends extends Application {
         profitPointsList.add(new AlgorithmData("You should buy @ " + secondStockMin.getClose(), secondStockMin.getDate()));
         profitPointsList.add(new AlgorithmData("You should sell @ " + secondStockMax.getClose(), secondStockMax.getDate()));
         profitPointsList.add(new AlgorithmData(("Net Profit with simple algo is: " + profit), ""));
-        
 
         drawTable(profitPointsList);
 
