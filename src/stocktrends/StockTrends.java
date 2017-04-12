@@ -255,12 +255,11 @@ public class StockTrends extends Application {
 
         List<Stock> stockData = new ArrayList<>();
 
-        //http://www.google.com/finance/historical?q=NASDAQ%3AGOOG&ei=C_jrWMHVIoKrjAG5pLa4CA&output=csv
+        //http://www.google.com/finance/historical?q=NASDAQ%3AGOOG&ei=C_jrWMHVIoKrjAG5pLa4CA&startdate=Jan+1%2C+1970&enddate=Apr+12%2C+2017&output=csv
         
-        String completedYahooUrl = "http://real-chart.finance.yahoo.com/table.csv?s=" + companyName;
-        URL csvUrl = new URL(completedYahooUrl);
-
-        URL website = csvUrl;
+        String completedGoogUrl = "http://www.google.com/finance/historical?q=NASDAQ%3A" + companyName + "&ei=C_jrWMHVIoKrjAG5pLa4CA&startdate=Jan+1%2C+1970&enddate=Apr+12%2C+2017&output=csv";
+        
+        URL website = new URL(completedGoogUrl);
         ReadableByteChannel rbc = Channels.newChannel(website.openStream());
         FileOutputStream fos = new FileOutputStream("csvData.csv");
         fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
@@ -285,8 +284,8 @@ public class StockTrends extends Application {
                     .open(nextLine[1])
                     .high(nextLine[2])
                     .low(nextLine[3])
-                    .volume(nextLine[5])
-                    .adjClose(nextLine[6])
+//                    .volume(nextLine[5])
+//                    .adjClose(nextLine[6])
                     .build();
 
             stockData.add(stock);
