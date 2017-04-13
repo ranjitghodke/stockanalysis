@@ -20,9 +20,11 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.application.Application;
@@ -196,7 +198,7 @@ public class StockTrends extends Application {
                         resetGraph();
                         break;
                     case "50 Day Moving Average":
-                        runSimpleAlgo(companyStockData);
+                        runMovingAverageAlgo(companyStockData, 50, 200);
                         break;
                     case "Find best average":
                         Thread t = new Thread(new Runnable(){
@@ -653,7 +655,7 @@ public class StockTrends extends Application {
      * Method: simpleAlgo Description: Simple stock buying and selling
      * algorithm.
      *
-     * Buy 50 shares of a stock when its 50-day moving average goes above the
+     * Buy/Sell 50 shares of a stock when its 50-day moving average goes above the
      * 200-day moving average Sell shares of the stock when its 50-day moving
      * average goes below the 200-day moving average
      *
@@ -662,7 +664,7 @@ public class StockTrends extends Application {
     private BigDecimal simpleAlgo(Stock s, BigDecimal movingAverageSmall, BigDecimal movingAverageLarge, BigDecimal curProfit) {
         switch (movingAverageSmall.compareTo(movingAverageLarge)) {
             case 1:
-                curProfit = curProfit.add(s.getClose().multiply(new BigDecimal(-50)));
+                curProfit = curProfit.add(s.getClose().multiply(new BigDecimal(50)));
                 profitPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 profitPointsList.add(new AlgorithmData("You should buy @ " + s.getClose(), s.getDate()));
                 break;
@@ -671,7 +673,7 @@ public class StockTrends extends Application {
                 profitPointsList.add(new AlgorithmData("You should do nothing", s.getDate()));
                 break;
             case -1:
-                curProfit = curProfit.add(s.getClose().multiply(new BigDecimal(50)));
+                curProfit = curProfit.add(s.getClose().multiply(new BigDecimal(-50)));
                 lossPoints.add(new XYChart.Data<Date, Number>(new GregorianCalendar(s.getYear(), s.getMonth(), s.getDay()).getTime(), s.getClose()));
                 profitPointsList.add(new AlgorithmData("You should sell @ " + s.getClose(), s.getDate()));
                 break;
@@ -684,22 +686,22 @@ public class StockTrends extends Application {
     }
 
     /**
-     * Method: runSimpleAlgo Description: Method used to run the simpleAlgo
-     * method using 200 day periods and simulating from the beginning of the
+     * Method: runMovingAverageAlgo Description: Method used to run the movingAverageAlgo
+     * method using specified periods and simulating from the beginning of the
      * company
      *
      * @param stockData
      */
-    private void runSimpleAlgo(Stock[] stockData) {
+    private void runMovingAverageAlgo(Stock[] stockData, int movingAvgSmall, int movingAvgLarge) {
         profitPoints = FXCollections.observableArrayList();
         neutralPoints = FXCollections.observableArrayList();
         lossPoints = FXCollections.observableArrayList();
         profit = new BigDecimal(0);
         profitPointsList = new ArrayList<>();
 
-        for (int i = stockData.length - 1; i > 200; i -= 50) {
-            Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - 200), i);
-            BigDecimal[] movingAverageStocks = calculateMovingAverages(tempPeriod, 50, 200);
+        for (int i = stockData.length - 1; i > movingAvgLarge; i -= movingAvgSmall) {
+            Stock[] tempPeriod = Arrays.copyOfRange(stockData, (i - movingAvgLarge), i);
+            BigDecimal[] movingAverageStocks = calculateMovingAverages(tempPeriod, movingAvgSmall, movingAvgLarge);
             profit = simpleAlgo(tempPeriod[0], movingAverageStocks[0], movingAverageStocks[1], profit);
         }
 
@@ -758,7 +760,19 @@ public class StockTrends extends Application {
      */
     private void runCustomAlgo(Stock[] stockData) {
 
-        List<ProfitPoint> profitList = new ArrayList<>();
+//        PriorityQueue<ProfitPoint> priorityQueue = new PriorityQueue<>(new Comparator<ProfitPoint>(){
+//            @Override
+//            public int compare(ProfitPoint o1, ProfitPoint o2) {
+//                return o1.profit.compareTo(o2.profit);
+//            }
+//        });
+        List<ProfitPoint> movingAvgCalcs = new ArrayList<>();
+        profitPointsList = new ArrayList<>();
+                    //Calculation Operation
+        profitPoints = FXCollections.observableArrayList();
+        neutralPoints = FXCollections.observableArrayList();
+        lossPoints = FXCollections.observableArrayList();        
+        
         int i = 1;
         int j = 1;
         int k = stockData.length - 1;
@@ -768,13 +782,9 @@ public class StockTrends extends Application {
 
                 for (j = 1; j < stockData.length - 1; j++) { //largeAvg
 
-                    //Calculation Operation
-                    profitPoints = FXCollections.observableArrayList();
-                    neutralPoints = FXCollections.observableArrayList();
-                    lossPoints = FXCollections.observableArrayList();
-                    profit = new BigDecimal(0);
-                    profitPointsList = new ArrayList<>();
 
+                    profit = new BigDecimal(0);
+                    
                     for (k = stockData.length - 1; k > j; k -= i) {
                         Stock[] tempPeriod = Arrays.copyOfRange(stockData, (k - j), k);
                         BigDecimal[] movingAverageStocks = calculateMovingAverages(tempPeriod, i, j);
@@ -783,7 +793,7 @@ public class StockTrends extends Application {
                     
                     //At the end of the movingAvg Calcs, add the data. Use 200 and 50 as a checkpoint since I know the value is -767121.9889
                     //It worked, the checkpoint reported: -767121.988900
-                    profitList.add(new ProfitPoint(i, j, profit));
+                    movingAvgCalcs.add(new ProfitPoint(i, j, profit));
                     if (j == 200 && i == 50) {
                         System.out.println("Checkpoint: " + profit);
                     }
@@ -795,17 +805,19 @@ public class StockTrends extends Application {
             System.out.println(" i: " + i + " j: " + j + " k: " + k);
         }
 
-        BigDecimal curMax = new BigDecimal(0);
-        int highI = 0, highJ = 0;
-        for (int x = 0; x < profitList.size(); x++) {
-            if (profitList.get(x).profit.compareTo(curMax) == 1) {
-                curMax = profitList.get(x).profit;
-                highI = profitList.get(x).valueSmall;
-                highJ = profitList.get(x).valueBig;
-            }
+        ProfitPoint max = null;
+        BigDecimal maxProfit = new BigDecimal(0);
+        
+        for(ProfitPoint x: movingAvgCalcs){
+            if(x.profit.compareTo(maxProfit) == 1){
+                maxProfit = x.profit;
+                max = x;
+            }   
         }
-
-        System.out.println("curMAX: " + curMax + " highI: " + highI + " highJ: " + highJ);
+        
+        runMovingAverageAlgo(stockData, max.valueSmall, max.valueBig);
+        
+        
     }
 
     /**
