@@ -762,6 +762,14 @@ public class StockTrends extends Application {
     private void runCustomAlgo(final Stock[] stockData) {
 
         List<ProfitPoint> profitList = new ArrayList<>();
+        PriorityQueue<ProfitPoint> profitHeap = new PriorityQueue<>(10, new Comparator<ProfitPoint>(){
+            @Override
+            public int compare(ProfitPoint o1, ProfitPoint o2) {
+                return o1.profit.compareTo(o2.profit);
+            }
+        });
+        
+        
         int i = 1;
         int j = 1;
         int k = stockData.length - 1;
@@ -786,7 +794,9 @@ public class StockTrends extends Application {
 
                     //At the end of the movingAvg Calcs, add the data. Use 200 and 50 as a checkpoint since I know the value is -767121.9889
                     //It worked, the checkpoint reported: -767121.988900
-                    profitList.add(new ProfitPoint(i, j, profit));
+                    ProfitPoint point = new ProfitPoint(i, j, profit);
+                    profitList.add(point);
+                    profitHeap.add(point);
                     if (j == 200 && i == 50) {
                         System.out.println("Checkpoint: " + profit);
                     }
@@ -798,21 +808,28 @@ public class StockTrends extends Application {
             System.out.println(" i: " + i + " j: " + j + " k: " + k);
         }
 
-        BigDecimal curMax = new BigDecimal(0);
-        int highI = 0, highJ = 0;
-        ProfitPoint tempHighProfitPoint = null;
-        for (int x = 0; x < profitList.size(); x++) {
-            if (profitList.get(x).profit.compareTo(curMax) == 1) {
-                curMax = profitList.get(x).profit;
-                highI = profitList.get(x).valueSmall;
-                highJ = profitList.get(x).valueBig;
-                tempHighProfitPoint = profitList.get(x);
-            }
+//        BigDecimal curMax = new BigDecimal(0);
+//        int highI = 0, highJ = 0;
+//        ProfitPoint tempHighProfitPoint = null;
+//        for (int x = 0; x < profitList.size(); x++) {
+//            if (profitList.get(x).profit.compareTo(curMax) == 1) {
+//                curMax = profitList.get(x).profit;
+//                highI = profitList.get(x).valueSmall;
+//                highJ = profitList.get(x).valueBig;
+//                tempHighProfitPoint = profitList.get(x);
+//            }
+//        }
+//
+//        System.out.println("curMAX: " + curMax + " highI: " + highI + " highJ: " + highJ);
+
+        final ProfitPoint highProfitPoint = profitHeap.peek();
+
+        while(!profitHeap.isEmpty()){
+            ProfitPoint tempHighProfitPoint = profitHeap.poll();
+            System.out.println("curMAX: " + tempHighProfitPoint.profit + " highI: " + tempHighProfitPoint.valueSmall + " highJ: " + tempHighProfitPoint.valueBig);
         }
 
-        System.out.println("curMAX: " + curMax + " highI: " + highI + " highJ: " + highJ);
-
-        final ProfitPoint highProfitPoint = tempHighProfitPoint;
+//        final ProfitPoint highProfitPoint = tempHighProfitPoint;
 
         Platform.runLater(new Runnable() {
             @Override
