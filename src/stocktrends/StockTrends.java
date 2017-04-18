@@ -824,7 +824,7 @@ public class StockTrends extends Application {
 
         final ProfitPoint highProfitPoint = profitHeap.peek();
 
-        while(!profitHeap.isEmpty()){
+        for(int x = 0; x<10; x++){
             ProfitPoint tempHighProfitPoint = profitHeap.poll();
             System.out.println("curMAX: " + tempHighProfitPoint.profit + " highI: " + tempHighProfitPoint.valueSmall + " highJ: " + tempHighProfitPoint.valueBig);
         }
