@@ -765,7 +765,7 @@ public class StockTrends extends Application {
         PriorityQueue<ProfitPoint> profitHeap = new PriorityQueue<>(10, new Comparator<ProfitPoint>(){
             @Override
             public int compare(ProfitPoint o1, ProfitPoint o2) {
-                return o1.profit.compareTo(o2.profit);
+                return o2.profit.compareTo(o1.profit);
             }
         });
         
