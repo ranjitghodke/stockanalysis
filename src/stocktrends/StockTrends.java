@@ -762,14 +762,13 @@ public class StockTrends extends Application {
     private void runCustomAlgo(final Stock[] stockData) {
 
         List<ProfitPoint> profitList = new ArrayList<>();
-        PriorityQueue<ProfitPoint> profitHeap = new PriorityQueue<>(10, new Comparator<ProfitPoint>(){
+        PriorityQueue<ProfitPoint> profitHeap = new PriorityQueue<>(10, new Comparator<ProfitPoint>() {
             @Override
             public int compare(ProfitPoint o1, ProfitPoint o2) {
                 return o2.profit.compareTo(o1.profit);
             }
         });
-        
-        
+
         int i = 1;
         int j = 1;
         int k = stockData.length - 1;
@@ -821,16 +820,14 @@ public class StockTrends extends Application {
 //        }
 //
 //        System.out.println("curMAX: " + curMax + " highI: " + highI + " highJ: " + highJ);
-
         final ProfitPoint highProfitPoint = profitHeap.peek();
 
-        for(int x = 0; x<10; x++){
+        for (int x = 0; x < 10; x++) {
             ProfitPoint tempHighProfitPoint = profitHeap.poll();
             System.out.println("curMAX: " + tempHighProfitPoint.profit + " highI: " + tempHighProfitPoint.valueSmall + " highJ: " + tempHighProfitPoint.valueBig);
         }
 
 //        final ProfitPoint highProfitPoint = tempHighProfitPoint;
-
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
