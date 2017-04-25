@@ -267,11 +267,11 @@ public class StockTrends extends Application {
         FileOutputStream fos = new FileOutputStream("csvData.csv");
         fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
 
-        File initialFile = new File("csvData.csv");
+        csvFile = new File("csvData.csv");
 
         InputStream csvInputStream;
 
-        csvInputStream = new FileInputStream(initialFile);
+        csvInputStream = new FileInputStream(csvFile);
 
         InputStreamReader initalStream = new InputStreamReader(csvInputStream);
 
